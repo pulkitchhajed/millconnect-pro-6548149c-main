@@ -21,6 +21,7 @@ const itemSchema = z.object({
   color: z.string().min(1, "Color is required"),
   quantity: z.coerce.number().min(0.1, "Quantity must be at least 0.1"),
   quantityType: z.enum(["Lump", "Cut Pack"]),
+  apcCode: z.string().optional(),
 });
 
 const orderSchema = z.object({
@@ -369,7 +370,6 @@ const OrderPage = () => {
                             <Input
                               id={`quantity-${index}`}
                               type="number"
-                              step={itemQuantityType === "Cut Pack" ? "1.20" : "1"}
                               {...register(`items.${index}.quantity` as const, {
                                 validate: (val) => {
                                   if (itemQuantityType === "Lump" && val < 40) return "Lump order must be at least 40m";
@@ -378,13 +378,28 @@ const OrderPage = () => {
                                     if (!isMultiple) return "Must be a multiple of 1.20m";
                                   }
                                   return true;
-                                }
+                                },
                               })}
                               className="mt-1.5"
                             />
                             {errors.items?.[index]?.quantity && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.quantity?.message}</p>}
                           </div>
                         </div>
+
+                        {!!fabric?.apc_enabled && (
+                          <div className="mt-6 border-t pt-4">
+                            <Label htmlFor={`apc-${index}`}>APC Code (Optional)</Label>
+                            <Input
+                              id={`apc-${index}`}
+                              {...register(`items.${index}.apcCode` as const)}
+                              placeholder="Enter APC code for manual cutting"
+                              className="mt-1.5"
+                            />
+                            <p className="text-[10px] text-muted-foreground mt-1 italic">
+                              * Share this code for manual fetching and cutting
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

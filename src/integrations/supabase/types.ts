@@ -285,6 +285,7 @@ export type Database = {
           fabric_name: string
           id: string
           message: string | null
+          messages: any[]
           quantity: number
           status: string
           updated_at: string
@@ -297,6 +298,7 @@ export type Database = {
           fabric_name: string
           id?: string
           message?: string | null
+          messages?: any[]
           quantity: number
           status?: string
           updated_at?: string
@@ -309,6 +311,7 @@ export type Database = {
           fabric_name?: string
           id?: string
           message?: string | null
+          messages?: any[]
           quantity?: number
           status?: string
           updated_at?: string

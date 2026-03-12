@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, ChevronLeft, ChevronRight, Truck, MapPin, Phone } from "lucide-react";
 import { useFabric, useFabricImages } from "@/hooks/useFabrics";
 import { useFavoriteIds, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,13 +20,14 @@ const FabricDetail = () => {
   const toggleFavorite = useToggleFavorite();
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [showAPCDetails, setShowAPCDetails] = useState(false);
 
   const isFav = favoriteIds?.has(id || "") || false;
 
-  const allImages = [
+  const allImages = Array.from(new Set([
     ...(fabric?.image_url ? [fabric.image_url] : []),
     ...(images?.map((i) => i.image_url) || []),
-  ];
+  ]));
 
   if (isLoading) {
     return (
@@ -68,8 +69,8 @@ const FabricDetail = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO 
-        title={fabric.name} 
+      <SEO
+        title={fabric.name}
         description={`${fabric.name} - ${fabric.type} fabric. ${fabric.description?.slice(0, 150)}...`}
         ogType="product"
         ogImage={fabric.image_url}
@@ -137,9 +138,8 @@ const FabricDetail = () => {
                         <button
                           key={i}
                           onClick={() => setCurrentImage(i)}
-                          className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 ${
-                            i === currentImage ? "border-primary" : "border-transparent"
-                          }`}
+                          className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 ${i === currentImage ? "border-primary" : "border-transparent"
+                            }`}
                         >
                           <img src={img} alt="" className="h-full w-full object-cover" />
                         </button>
@@ -193,20 +193,21 @@ const FabricDetail = () => {
                       <button
                         key={idx}
                         onClick={() => {
-                          setSelectedColors(prev => 
+                          setSelectedColors(prev =>
                             isSelected ? prev.filter(n => n !== name) : [...prev, name]
                           );
                         }}
-                        className={`group relative flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all hover:border-primary ${
-                          isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background"
-                        }`}
+                        className={`group relative flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all hover:border-primary ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background"
+                          }`}
                         title={name}
                       >
-                        <span 
-                          className="h-4 w-4 rounded-full border shadow-sm" 
+                        <span
+                          className="h-4 w-4 rounded-full border shadow-sm"
                           style={{ backgroundColor: hex }}
                         />
-                        <span className="text-xs font-medium">{name}</span>
+                        <span className="text-xs font-medium">
+                          {name}
+                        </span>
                         {isSelected && (
                           <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
                             ✓
@@ -215,7 +216,23 @@ const FabricDetail = () => {
                       </button>
                     );
                   })}
-                  {!fabric.colors && <p className="font-medium">N/A</p>}
+                  {fabric.apc_enabled && (
+                    <button
+                      onClick={() => setShowAPCDetails(!showAPCDetails)}
+                      className={`group relative flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all hover:border-primary ${showAPCDetails ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-background"
+                        }`}
+                      title="APC Support Selection"
+                    >
+                      <Truck className={`h-4 w-4 ${showAPCDetails ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-xs font-bold ${showAPCDetails ? "text-primary" : "text-foreground"}`}>APC</span>
+                      {showAPCDetails && (
+                        <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+                          ✓
+                        </div>
+                      )}
+                    </button>
+                  )}
+                  {!fabric.colors && !fabric.apc_enabled && <p className="font-medium">N/A</p>}
                 </div>
               </div>
               <div>
@@ -238,6 +255,33 @@ const FabricDetail = () => {
                       <p className="mt-1 font-medium">{s.value}</p>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {fabric.apc_enabled && showAPCDetails && (
+              <div className="mt-8 rounded-2xl bg-primary/5 p-6 border border-primary/10 animate-in fade-in slide-in-from-top-4 duration-500">
+                <h3 className="font-display text-lg font-bold text-primary mb-4 flex items-center gap-2">
+                  <Truck className="h-5 w-5" /> APC Dyeing Details
+                </h3>
+                <div className="space-y-4 text-sm">
+                  <p className="text-muted-foreground">
+                    You can provide your APC during the ordering process for <span className="font-semibold text-foreground">Dyeing of the Fabric</span>.
+                  </p>
+                  <div className="rounded-xl bg-background/50 p-4 border border-primary/5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5" /> Shipping Address for Cutting
+                    </p>
+                    <div className="space-y-1 text-foreground">
+                      <p className="font-medium">240 MT Cloth Market</p>
+                      <p>2nd Floor, Indore</p>
+                      <p>452005</p>
+                      <p className="mt-2 pt-2 border-t border-primary/10 flex items-center gap-2 text-primary">
+                        <Phone className="h-3.5 w-3.5" />
+                        <a href="tel:9425062020" className="font-bold hover:underline">9425062020</a>
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

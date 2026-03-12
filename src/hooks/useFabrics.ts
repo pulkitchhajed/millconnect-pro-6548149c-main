@@ -19,6 +19,7 @@ export interface Fabric {
   finish: string | null;
   shrinkage: string | null;
   category: string | null;
+  apc_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +60,7 @@ export const useFabric = (id: string | undefined) => {
       return data as Fabric;
     },
     enabled: !!id,
+    staleTime: 0,
   });
 };
 
@@ -76,5 +78,6 @@ export const useFabricImages = (fabricId: string | undefined) => {
       return data as FabricImage[];
     },
     enabled: !!fabricId,
+    staleTime: 0,
   });
 };

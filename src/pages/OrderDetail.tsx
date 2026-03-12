@@ -62,7 +62,7 @@ const generateOrderPDF = (o: any) => {
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
     info.push(["Total Quantity", `${o.quantity} meters`]);
   } else {
-    info.push(["Color", o.selected_color || "Standard"]);
+    info.push(["Color", (o.selected_color || "Standard").split(",").map((c: string) => c.split(":")[0].trim()).join(", ")]);
     info.push(["Quantity Type", o.quantity_type || "Lump"]);
     info.push(["Quantity", `${o.quantity} meters`]);
   }
@@ -87,16 +87,18 @@ const generateOrderPDF = (o: any) => {
     // Header for items table
     doc.setTextColor(120);
     doc.text("Color", m, y);
-    doc.text("Type", 70, y);
-    doc.text("Quantity", 110, y);
+    doc.text("Type", 60, y);
+    doc.text("APC", 90, y);
+    doc.text("Quantity", 130, y);
     y += 6;
     doc.line(m, y - 4, 150, y - 4);
 
     o.items.forEach((item: any) => {
       doc.setTextColor(0);
-      doc.text(item.color || "Standard", m, y);
-      doc.text(item.quantityType || "Lump", 70, y);
-      doc.text(`${item.quantity}m`, 110, y);
+      doc.text((item.color || "Standard").split(":")[0].trim(), m, y);
+      doc.text(item.quantityType || "Lump", 60, y);
+      doc.text(item.apcCode || "-", 90, y);
+      doc.text(`${item.quantity}m`, 130, y);
       y += 6;
     });
     doc.setFontSize(10);
@@ -358,11 +360,14 @@ const OrderDetail = () => {
                       {order.items.map((item: any, idx: number) => (
                         <div key={idx} className="group rounded-xl bg-muted/30 p-4 transition-all hover:bg-muted/50">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-muted-foreground uppercase">{item.color}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase">{item.color?.split(":")[0].trim()}</span>
                             <Badge variant="outline" className="text-[10px] font-bold px-2 py-0">{item.quantityType}</Badge>
                           </div>
                           <div className="flex justify-between items-end">
-                            <span className="text-lg font-bold">{item.quantity}m</span>
+                            <div className="flex flex-col">
+                              <span className="text-lg font-bold">{item.quantity}m</span>
+                              {item.apcCode && <span className="text-[10px] text-primary font-bold">APC: {item.apcCode}</span>}
+                            </div>
                             <span className="text-xs text-muted-foreground">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
                           </div>
                         </div>
@@ -372,7 +377,7 @@ const OrderDetail = () => {
                     <div className="space-y-4 pb-6 border-b">
                        <div className="flex justify-between">
                         <span className="text-muted-foreground">Color</span>
-                        <span className="font-bold">{order.selected_color || "Standard"}</span>
+                        <span className="font-bold">{(order.selected_color || "Standard").split(",").map((c: string) => c.split(":")[0].trim()).join(", ")}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Quantity Type</span>

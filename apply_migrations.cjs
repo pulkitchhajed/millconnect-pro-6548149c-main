@@ -9,6 +9,7 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS selected_color TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity_type TEXT NOT NULL DEFAULT 'Lump';
 ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS selected_color TEXT;
 ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS quantity_type TEXT NOT NULL DEFAULT 'Lump';
+ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS messages JSONB DEFAULT '[]'::jsonb;
 
 -- Update trigger for admin seeding
 CREATE OR REPLACE FUNCTION public.handle_new_user()

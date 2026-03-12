@@ -21,6 +21,7 @@ const itemSchema = z.object({
   color: z.string().min(1, "Color is required"),
   quantity: z.coerce.number().min(0.1, "Quantity must be at least 0.1"),
   quantityType: z.enum(["Lump", "Cut Pack"]),
+  apcCode: z.string().optional(),
 });
 
 const quoteSchema = z.object({
@@ -268,6 +269,21 @@ const QuoteRequest = () => {
                         {errors.items?.[index]?.quantity && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.quantity?.message}</p>}
                       </div>
                     </div>
+
+                    {!!fabric?.apc_enabled && (
+                      <div className="mt-6 border-t pt-4">
+                        <Label htmlFor={`q-apc-${index}`}>APC Code (Optional)</Label>
+                        <Input
+                          id={`q-apc-${index}`}
+                          {...register(`items.${index}.apcCode` as const)}
+                          placeholder="Enter APC code for manual cutting"
+                          className="mt-1.5"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1 italic">
+                          * Share this code for manual fetching and cutting
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

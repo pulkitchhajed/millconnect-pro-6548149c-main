@@ -12,6 +12,9 @@ const Footer = () => {
             <span className="font-display text-lg font-bold">Mill-Connect</span>
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
+            Contact us: <a href="tel:9425062020" className="text-primary hover:underline">9425062020</a>, <a href="tel:9294662020" className="text-primary hover:underline">9294662020</a>
+          </p>
+          <p className="max-w-md text-sm text-muted-foreground">
             Your trusted partner for quality textile sourcing. Connecting garment manufacturers with premium mills.
           </p>
           <p className="text-xs text-muted-foreground">

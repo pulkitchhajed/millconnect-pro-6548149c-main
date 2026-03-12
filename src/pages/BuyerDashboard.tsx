@@ -4,10 +4,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Package, ClipboardList, FileText, ArrowRight } from "lucide-react";
+import { Package, ClipboardList, ArrowRight, Heart, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
@@ -55,7 +59,62 @@ const BuyerDashboard = () => {
       setQuotes(q || []);
     };
     fetch();
+
+    // Subscribe to quote_requests for pop-up notifications
+    const channel = supabase
+      .channel("buyer-quotes")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quote_requests", filter: `user_id=eq.${user.id}` }, (payload) => {
+         const newRecord = payload.new as any;
+         // Check if a new message is from admin
+         if (newRecord.messages && Array.isArray(newRecord.messages)) {
+            const lastMsg = newRecord.messages[newRecord.messages.length - 1];
+            if (lastMsg && lastMsg.sender === "admin") {
+              toast.info(`New quote response from Admin for ${newRecord.fabric_name}!`, { duration: 6000 });
+            }
+         }
+         fetch();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  const respondToQuote = async (quoteId: string, response: string, newPrice?: number, customStatus?: string) => {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return;
+    
+    // Add counter-offer text to the response if provided
+    let fullResponse = response;
+    if (newPrice) {
+      fullResponse += `\n\nCounter Offer: ₹${newPrice.toLocaleString("en-IN")}/m`;
+    }
+
+    const newMessage = {
+      sender: "buyer",
+      text: fullResponse,
+      timestamp: new Date().toISOString()
+    };
+    
+    const messages = quote.messages || [];
+    const updatedMessages = [...messages, newMessage];
+
+    const { error } = await supabase.from("quote_requests").update({ 
+      status: customStatus || "Pending", // Set back to pending so admin sees it by default
+      messages: updatedMessages
+    }).eq("id", quoteId);
+    
+    if (error) toast.error("Failed to send message");
+    else { 
+      toast.success("Message sent to Admins"); 
+      const { data: q } = await supabase
+        .from("quote_requests")
+        .select("*, fabrics:fabric_id(image_url)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setQuotes(q || []);
+    }
+  };
 
   if (authLoading) {
     return <div className="min-h-screen"><Navbar /><div className="container mx-auto flex min-h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div><Footer /></div>;
@@ -166,13 +225,18 @@ const BuyerDashboard = () => {
                             <Package className="h-3 w-3" />
                             {o.items && Array.isArray(o.items) && o.items.length > 0
                               ? `${o.items.length} color${o.items.length > 1 ? 's' : ''}`
-                              : (o.selected_color || "Standard")}
+                              : (o.selected_color?.split(",").map(c => c.split(":")[0].trim()).join(", ") || "Standard")}
                           </span>
                           <span>·</span>
                           <span>{o.quantity}m</span>
                           <span>·</span>
                           <span className="font-medium text-foreground">₹{Number(o.total).toLocaleString("en-IN")}</span>
                         </div>
+                        {o.items && Array.isArray(o.items) && (o.items as any[]).some(i => i.apcCode) && (
+                          <div className="mt-2 text-[10px] text-primary font-bold bg-primary/5 px-2 py-1 rounded inline-block">
+                            APC Codes: {(o.items as any[]).filter(i => i.apcCode).map(i => `${i.color?.split(":")[0].trim()}: ${i.apcCode}`).join(", ")}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -263,17 +327,88 @@ const BuyerDashboard = () => {
                       <span className="flex items-center gap-1.5"><Package className="h-3.5 w-3.5" />
                         {q.items && Array.isArray(q.items) && q.items.length > 0
                           ? `${q.items.length} color${q.items.length > 1 ? 's' : ''}`
-                          : (q.selected_color || "Standard")}
+                          : (q.selected_color?.split(",").map(c => c.split(":")[0].trim()).join(", ") || "Standard")}
                       </span>
                       <span>·</span>
                       <span>{q.quantity} units</span>
                       <span>·</span>
                       <span>{new Date(q.created_at).toLocaleDateString("en-IN")}</span>
                     </div>
-                    {q.admin_response && (
-                      <div className="mt-4 flex gap-3 rounded-xl bg-primary/5 p-4 text-sm text-foreground/90 border border-primary/10">
-                        <ClipboardList className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                        <p>{q.admin_response}</p>
+                    {q.items && Array.isArray(q.items) && (q.items as any[]).some(i => i.apcCode) && (
+                      <div className="mt-3 text-[10px] text-primary font-bold bg-primary/5 px-2 py-1 rounded inline-block">
+                        APC Codes: {(q.items as any[]).filter(i => i.apcCode).map(i => `${i.color?.split(":")[0].trim()}: ${i.apcCode}`).join(", ")}
+                      </div>
+                    )}
+
+                    {/* Messages Thread */}
+                    <div className="mt-4 space-y-3 bg-muted/30 p-4 rounded-lg">
+                      {/* Initial message */}
+                      {q.message && (
+                        <div className="flex flex-col items-start text-sm">
+                          <span className="font-semibold text-xs text-muted-foreground mb-1">You (Initial)</span>
+                          <div className="bg-background border rounded-md px-3 py-2 max-w-[80%]">
+                            {q.message}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Chat history */}
+                      {q.messages && Array.isArray(q.messages) && q.messages.map((msg: any, idx: number) => (
+                        <div key={idx} className={`flex flex-col text-sm ${msg.sender === 'buyer' ? 'items-end' : 'items-start'}`}>
+                          <span className="font-semibold text-xs text-muted-foreground mb-1">
+                            {msg.sender === 'buyer' ? 'You' : 'Admin'}
+                          </span>
+                          <div className={`rounded-md px-3 py-2 max-w-[80%] whitespace-pre-line ${
+                            msg.sender === 'buyer' ? 'bg-primary text-primary-foreground' : 'bg-background border'
+                          }`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Legacy fall-back for older quotes before messages array */}
+                      {!q.messages?.length && q.admin_response && (
+                        <div className="flex flex-col items-start text-sm">
+                          <span className="font-semibold text-xs text-muted-foreground mb-1">Admin</span>
+                          <div className="bg-background border rounded-md px-3 py-2 max-w-[80%] whitespace-pre-line text-foreground/90">
+                            {q.admin_response}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {q.status !== "Declined" && q.status !== "Accepted" && (
+                      <div className="mt-4 flex flex-col gap-2 border-t pt-4">
+                        <Label>Send Message / Counter Offer</Label>
+                        <Textarea 
+                          id={`buyer-reply-${q.id}`} 
+                          placeholder="Type your message here..." 
+                          className="min-h-[80px]" 
+                        />
+                        <div className="flex gap-2 items-center mt-2">
+                          <div className="flex-1 max-w-[200px]">
+                            <Label className="text-xs mb-1 block">Counter Price (Optional)</Label>
+                            <Input id={`buyer-price-${q.id}`} type="number" placeholder="₹/m" />
+                          </div>
+                          <div className="ml-auto flex gap-2 self-end">
+                            <Button size="sm" onClick={() => {
+                              const responseBox = document.getElementById(`buyer-reply-${q.id}`) as HTMLTextAreaElement;
+                              const priceBox = document.getElementById(`buyer-price-${q.id}`) as HTMLInputElement;
+                              if (responseBox?.value) {
+                                respondToQuote(
+                                  q.id, 
+                                  responseBox.value, 
+                                  priceBox?.value ? Number(priceBox.value) : undefined
+                                );
+                                responseBox.value = "";
+                                if(priceBox) priceBox.value = "";
+                              } else {
+                                toast.error("Please enter a message");
+                              }
+                            }}>Send Message</Button>
+                            <Button size="sm" variant="outline" className="text-success border-success hover:bg-success hover:text-success-foreground transition-colors" onClick={() => respondToQuote(q.id, "Buyer Approved Offer", undefined, "Accepted")}>Approve</Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

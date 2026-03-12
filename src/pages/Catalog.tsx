@@ -123,7 +123,9 @@ const Catalog = () => {
                   <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Color</span>
-                      <p className="font-medium">{fabric.colors}</p>
+                      <p className="font-medium">
+                        {fabric.colors?.split(",").map(c => c.split(":")[0].trim()).join(", ") || "Standard"}
+                      </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Min. Order</span>
@@ -136,8 +138,8 @@ const Catalog = () => {
                       <span className="text-sm text-muted-foreground">/meter</span>
                     </div>
                     <Button asChild size="sm" disabled={!fabric.available}>
-                      <Link to={`/order/${fabric.id}`}>
-                        Order <ArrowRight className="ml-1 h-3 w-3" />
+                      <Link to={`/fabric/${fabric.id}`}>
+                        View Details <ArrowRight className="ml-1 h-3 w-3" />
                       </Link>
                     </Button>
                   </div>
