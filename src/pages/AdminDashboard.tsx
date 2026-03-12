@@ -23,12 +23,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Fabric } from "@/hooks/useFabrics";
 
-const statusSteps = ["Pending", "Confirmed", "In Production", "Shipped", "Delivered", "Cancelled"];
+const statusSteps = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
 
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   Confirmed: "bg-primary/10 text-primary border-primary/20",
-  "In Production": "bg-secondary/10 text-secondary border-secondary/20",
   Shipped: "bg-success/10 text-success border-success/20",
   Delivered: "bg-success/15 text-success border-success/30",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
@@ -50,7 +49,7 @@ const AdminDashboard = () => {
   const [editingFabric, setEditingFabric] = useState<Fabric | null>(null);
   const [fabricForm, setFabricForm] = useState({
     name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0,
-    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "",
+    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
@@ -67,9 +66,9 @@ const AdminDashboard = () => {
 
   const fetchAll = async () => {
     const [ordersRes, fabricsRes, quotesRes] = await Promise.all([
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase.from("orders").select("*, fabrics:fabric_id_ref(image_url)").order("created_at", { ascending: false }),
       supabase.from("fabrics").select("*").order("created_at", { ascending: true }),
-      supabase.from("quote_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("quote_requests").select("*, fabrics:fabric_id(image_url)").order("created_at", { ascending: false }),
     ]);
     const allOrders = ordersRes.data || [];
     setOrders(allOrders);
@@ -233,14 +232,14 @@ const AdminDashboard = () => {
         min_order: fabric.min_order, price_per_meter: Number(fabric.price_per_meter), unit: fabric.unit,
         available: fabric.available, image_url: fabric.image_url || "",
         gsm: fabric.gsm?.toString() || "", weave: fabric.weave || "", width: fabric.width || "",
-        composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "",
+        composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "", category: fabric.category || "",
       });
       // Fetch existing images
       const { data } = await supabase.from("fabric_images").select("*").eq("fabric_id", fabric.id).order("sort_order");
       setExistingImages(data || []);
     } else {
       setEditingFabric(null);
-      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "" });
+      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "" });
       setExistingImages([]);
     }
     setFabricDialog(true);
@@ -261,7 +260,7 @@ const AdminDashboard = () => {
       unit: fabricForm.unit, available: fabricForm.available, image_url: mainImageUrl || null,
       gsm: fabricForm.gsm ? parseInt(fabricForm.gsm) : null, weave: fabricForm.weave || null,
       width: fabricForm.width || null, composition: fabricForm.composition || null,
-      finish: fabricForm.finish || null, shrinkage: fabricForm.shrinkage || null,
+      finish: fabricForm.finish || null, shrinkage: fabricForm.shrinkage || null, category: fabricForm.category || null,
     };
 
     let error;
@@ -305,8 +304,8 @@ const AdminDashboard = () => {
           sort_order: sortOrderOffset + i
         });
 
-        // Set the first uploaded image as main image if there is no main image
-        if (!mainImageUrl && i === 0 && !existingImages.length) {
+        // Set the first uploaded image as main image if there is no main image set
+        if (!mainImageUrl && i === 0) {
           mainImageUrl = publicUrl;
           await supabase.from("fabrics").update({ image_url: mainImageUrl }).eq("id", fabricId);
         }
@@ -376,7 +375,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="fabrics">Fabrics</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="roles">Users</TabsTrigger>
           </TabsList>
 
           {/* ORDERS TAB */}
@@ -387,13 +386,28 @@ const AdminDashboard = () => {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-3">
-                        <h3 className="font-display text-lg font-semibold">{order.fabric_name}</h3>
-                        <Badge variant="outline" className={statusColors[order.status] || ""}>{order.status}</Badge>
+                        {order.fabrics?.image_url && (
+                          <img src={order.fabrics.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                        )}
+                        <div>
+                          <h3 className="font-display text-lg font-semibold">{order.fabric_name}</h3>
+                          <Badge variant="outline" className={statusColors[order.status] || ""}>{order.status}</Badge>
+                        </div>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {order.buyer_name} · {order.company_name} · {new Date(order.created_at).toLocaleDateString("en-IN")}
                       </p>
-                      <p className="text-sm text-muted-foreground">{order.quantity}m · ₹{Number(order.total).toLocaleString("en-IN")}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{order.quantity}m</span>
+                        <span>·</span>
+                        <span>₹{Number(order.total).toLocaleString("en-IN")}</span>
+                        {order.items && Array.isArray(order.items) && order.items.length > 0 && (
+                          <>
+                            <span>·</span>
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1">{order.items.length} colors</Badge>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Select defaultValue={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
@@ -449,10 +463,25 @@ const AdminDashboard = () => {
               {quotes.map((q) => (
                 <div key={q.id} className="rounded-xl border bg-card p-5">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{q.fabric_name}</p>
-                      <p className="text-sm text-muted-foreground">{q.quantity} units · {new Date(q.created_at).toLocaleDateString("en-IN")}</p>
+                    <div className="flex items-center gap-4">
+                      {q.fabrics?.image_url && (
+                        <img src={q.fabrics.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      )}
+                      <div>
+                        <p className="font-medium">{q.fabric_name}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{q.quantity} units</span>
+                        <span>·</span>
+                        <span>{new Date(q.created_at).toLocaleDateString("en-IN")}</span>
+                        {q.items && Array.isArray(q.items) && q.items.length > 0 && (
+                          <>
+                            <span>·</span>
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1">{q.items.length} colors</Badge>
+                          </>
+                        )}
+                      </div>
                       {q.message && <p className="mt-2 text-sm">{q.message}</p>}
+                      </div>
                     </div>
                     <Badge variant="outline">{q.status}</Badge>
                   </div>
@@ -532,9 +561,32 @@ const AdminDashboard = () => {
           <DialogHeader><DialogTitle>{editingFabric ? "Edit Fabric" : "Add Fabric"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><Label>Name *</Label><Input value={fabricForm.name} onChange={(e) => setFabricForm((p) => ({ ...p, name: e.target.value }))} className="mt-1.5" /></div>
-            <div><Label>Type *</Label><Input value={fabricForm.type} onChange={(e) => setFabricForm((p) => ({ ...p, type: e.target.value }))} className="mt-1.5" /></div>
             <div className="sm:col-span-2"><Label>Description</Label><Textarea value={fabricForm.description} onChange={(e) => setFabricForm((p) => ({ ...p, description: e.target.value }))} className="mt-1.5" /></div>
-            <div><Label>Colors</Label><Input value={fabricForm.colors} onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))} className="mt-1.5" /></div>
+            <div>
+              <Label>Category *</Label>
+              <Select value={fabricForm.category} onValueChange={(v) => setFabricForm((p) => ({ ...p, category: v }))}>
+                <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cotton">Cotton</SelectItem>
+                  <SelectItem value="Polyester">Polyester</SelectItem>
+                  <SelectItem value="Uniform">Uniform</SelectItem>
+                  <SelectItem value="Linen">Linen</SelectItem>
+                  <SelectItem value="Silk">Silk</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Type *</Label><Input value={fabricForm.type} onChange={(e) => setFabricForm((p) => ({ ...p, type: e.target.value }))} className="mt-1.5" /></div>
+            <div>
+              <Label>Colors</Label>
+              <Input 
+                value={fabricForm.colors} 
+                onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))} 
+                className="mt-1.5" 
+                placeholder="Red:#FF0000, Blue:#0000FF"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Format: Name:HexCode, ... (e.g. Red:#FF0000)</p>
+            </div>
             <div><Label>Price/Meter (₹)</Label><Input type="number" value={fabricForm.price_per_meter} onChange={(e) => setFabricForm((p) => ({ ...p, price_per_meter: Number(e.target.value) }))} className="mt-1.5" /></div>
             <div><Label>Min Order</Label><Input type="number" value={fabricForm.min_order} onChange={(e) => setFabricForm((p) => ({ ...p, min_order: Number(e.target.value) }))} className="mt-1.5" /></div>
             <div><Label>Unit</Label><Input value={fabricForm.unit} onChange={(e) => setFabricForm((p) => ({ ...p, unit: e.target.value }))} className="mt-1.5" /></div>
@@ -622,50 +674,110 @@ const AdminDashboard = () => {
 
 // Admin Roles Manager sub-component
 const AdminRolesManager = () => {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<string>("admin");
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const fetchRoles = async () => {
-    const { data: rolesData } = await supabase.from("user_roles").select("*");
-    if (!rolesData || rolesData.length === 0) { setRoles([]); return; }
-    // Fetch profiles to get buyer names
-    const userIds = rolesData.map((r) => r.user_id);
-    const { data: profilesData } = await supabase.from("profiles").select("user_id, buyer_name, company_name").in("user_id", userIds);
-    const profileMap: Record<string, { buyer_name: string; company_name: string }> = {};
-    (profilesData || []).forEach((p) => { profileMap[p.user_id] = p; });
-    setRoles(rolesData.map((r) => ({ ...r, buyer_name: profileMap[r.user_id]?.buyer_name || "", company_name: profileMap[r.user_id]?.company_name || "" })));
+  const fetchData = async () => {
+    setLoading(true);
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("*")
+    ]);
+    
+    setProfiles(profilesRes.data || []);
+    setRoles(rolesRes.data || []);
+    setLoading(false);
   };
 
-  useEffect(() => { fetchRoles(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const addRole = async () => {
-    // We need to find user by email - using profiles or a lookup
-    toast.info("To assign roles, add the user_id and role directly via the backend. Email lookup requires additional setup.");
+  const toggleAdmin = async (userId: string, currentRole?: string) => {
+    if (currentRole === "admin") {
+      // Revoke
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      
+      if (error) toast.error("Failed to revoke admin rights");
+      else {
+        toast.success("Admin rights revoked");
+        fetchData();
+      }
+    } else {
+      // Grant
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: "admin" });
+      
+      if (error) toast.error("Failed to grant admin rights");
+      else {
+        toast.success("Admin rights granted");
+        fetchData();
+      }
+    }
   };
 
-  const removeRole = async (roleId: string) => {
-    const { error } = await supabase.from("user_roles").delete().eq("id", roleId);
-    if (error) toast.error("Failed to remove role");
-    else { toast.success("Role removed"); fetchRoles(); }
-  };
+  const filteredProfiles = profiles.filter(p => 
+    p.buyer_name?.toLowerCase().includes(search.toLowerCase()) || 
+    p.company_name?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div>
-      <h3 className="font-display text-lg font-semibold mb-4">User Roles</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold">Manage User Access</h3>
+        <div className="relative w-64">
+          <Input 
+            placeholder="Search users..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+          <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {roles.map((r) => (
-          <div key={r.id} className="flex items-center justify-between rounded-lg border bg-card p-4">
-            <div>
-              <p className="font-medium text-sm">{r.buyer_name || r.company_name || r.user_id}</p>
-              <Badge variant="outline" className="mt-1">{r.role}</Badge>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => removeRole(r.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
-          </div>
-        ))}
-        {roles.length === 0 && <p className="text-muted-foreground text-sm">No roles assigned yet.</p>}
+        {loading ? (
+          <p className="text-center text-muted-foreground py-10">Loading users...</p>
+        ) : filteredProfiles.length === 0 ? (
+          <p className="text-center text-muted-foreground py-10">No users found.</p>
+        ) : (
+          filteredProfiles.map((p) => {
+            const isAdmin = roles.some(r => r.user_id === p.user_id && r.role === "admin");
+            return (
+              <div key={p.id} className="flex items-center justify-between rounded-xl border bg-card p-4 transition-all hover:shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    {p.buyer_name?.[0] || p.company_name?.[0] || "?"}
+                  </div>
+                  <div>
+                    <p className="font-medium">{p.buyer_name || "New User"}</p>
+                    <p className="text-xs text-muted-foreground">{p.company_name || "No company"} · Joined {new Date(p.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {isAdmin ? (
+                    <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">Buyer</Badge>
+                  )}
+                  <Button 
+                    variant={isAdmin ? "destructive" : "outline"} 
+                    size="sm"
+                    onClick={() => toggleAdmin(p.user_id, isAdmin ? "admin" : undefined)}
+                  >
+                    {isAdmin ? "Revoke Admin" : "Grant Admin"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

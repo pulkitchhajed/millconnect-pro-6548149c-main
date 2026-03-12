@@ -18,6 +18,7 @@ export interface Fabric {
   composition: string | null;
   finish: string | null;
   shrinkage: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,7 @@ export const useFabrics = () => {
       if (error) throw error;
       return data as Fabric[];
     },
+    staleTime: 0, // always fetch fresh data
   });
 };
 

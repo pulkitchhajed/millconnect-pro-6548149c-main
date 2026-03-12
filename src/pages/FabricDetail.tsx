@@ -19,6 +19,7 @@ const FabricDetail = () => {
   const { data: favoriteIds } = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const [currentImage, setCurrentImage] = useState(0);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   const isFav = favoriteIds?.has(id || "") || false;
 
@@ -182,7 +183,40 @@ const FabricDetail = () => {
             <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Colors</span>
-                <p className="font-medium">{fabric.colors}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {fabric.colors && fabric.colors.split(",").map((c: string, idx: number) => {
+                    const parts = c.trim().split(":");
+                    const name = parts[0]?.trim() || "";
+                    const hex = parts[1]?.trim() || "#CCCCCC";
+                    const isSelected = selectedColors.includes(name);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSelectedColors(prev => 
+                            isSelected ? prev.filter(n => n !== name) : [...prev, name]
+                          );
+                        }}
+                        className={`group relative flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all hover:border-primary ${
+                          isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background"
+                        }`}
+                        title={name}
+                      >
+                        <span 
+                          className="h-4 w-4 rounded-full border shadow-sm" 
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span className="text-xs font-medium">{name}</span>
+                        {isSelected && (
+                          <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+                            ✓
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {!fabric.colors && <p className="font-medium">N/A</p>}
+                </div>
               </div>
               <div>
                 <span className="text-muted-foreground">Min. Order</span>
@@ -210,17 +244,17 @@ const FabricDetail = () => {
 
             <div className="mt-8 flex gap-3">
               <Button asChild size="lg" disabled={!fabric.available}>
-                <Link to={`/order/${fabric.id}`}>
-                  Order Now <ArrowRight className="ml-1 h-4 w-4" />
+                <Link to={`/order/${fabric.id}${selectedColors.length > 0 ? `?colors=${encodeURIComponent(selectedColors.join(","))}` : ""}`}>
+                  {selectedColors.length > 1 ? `Order ${selectedColors.length} Colors` : "Order Now"} <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
               {user && (
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => navigate(`/quote/${fabric.id}`)}
+                  onClick={() => navigate(`/quote/${fabric.id}${selectedColors.length > 0 ? `?colors=${encodeURIComponent(selectedColors.join(","))}` : ""}`)}
                 >
-                  Request Quote
+                  {selectedColors.length > 1 ? `Request ${selectedColors.length} Quotes` : "Request Quote"}
                 </Button>
               )}
             </div>
