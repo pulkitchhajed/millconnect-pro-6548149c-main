@@ -11,23 +11,27 @@ import { useAuth } from "@/hooks/useAuth";
 import SEO from "@/components/SEO";
 
 const Catalog = () => {
-  const [filter, setFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [search, setSearch] = useState("");
   const { data: fabrics, isLoading } = useFabrics();
   const { data: favoriteIds } = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const { user } = useAuth();
 
-  const types = ["All", ...Array.from(new Set(fabrics?.map((f) => f.type) || []))];
+  const types = ["All", ...Array.from(new Set(fabrics?.map((f) => f.type).filter(Boolean) || []))];
+  const categories = ["All", ...Array.from(new Set(fabrics?.map((f) => f.category).filter(Boolean) || []))];
 
   const filtered = (fabrics || []).filter((f) => {
-    const matchesType = filter === "All" || f.type === filter;
+    const matchesType = typeFilter === "All" || f.type === typeFilter;
+    const matchesCategory = categoryFilter === "All" || f.category === categoryFilter;
     const matchesSearch =
       !search ||
       f.name.toLowerCase().includes(search.toLowerCase()) ||
-      f.type.toLowerCase().includes(search.toLowerCase()) ||
-      f.colors.toLowerCase().includes(search.toLowerCase());
-    return matchesType && matchesSearch;
+      (f.type || "").toLowerCase().includes(search.toLowerCase()) ||
+      (f.category || "").toLowerCase().includes(search.toLowerCase()) ||
+      (f.colors || "").toLowerCase().includes(search.toLowerCase());
+    return matchesType && matchesCategory && matchesSearch;
   });
 
   const colorMap: Record<string, string> = {
@@ -40,8 +44,8 @@ const Catalog = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO 
-        title="Fabric Catalog" 
+      <SEO
+        title="Fabric Catalog"
         description="Explore our wide range of fabrics from verified mills. Filter by type, color, and more to find the perfect fabric for your needs."
       />
       <Navbar />
@@ -60,20 +64,24 @@ const Catalog = () => {
           />
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {types.map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilter(t)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                filter === t
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="mt-8 space-y-6">
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Product Category</h3>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCategoryFilter(c)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${categoryFilter === c
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {isLoading ? (

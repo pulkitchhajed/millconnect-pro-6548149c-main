@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   Confirmed: "bg-primary/10 text-primary border-primary/20",
-  "In Production": "bg-secondary/10 text-secondary border-secondary/20",
   Shipped: "bg-success/10 text-success border-success/20",
   Delivered: "bg-success/15 text-success border-success/30",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
