@@ -68,7 +68,17 @@ const generateOrderPDF = (o: any) => {
   }
   
   info.push(["Rate", `₹${Number(o.price_per_meter).toLocaleString("en-IN")}/meter`]);
-  info.push(["Total Amount", `₹${Number(o.total).toLocaleString("en-IN")}`]);
+  info.push(["Subtotal", `₹${Number(o.subtotal || o.total).toLocaleString("en-IN")}`]);
+  if (o.total_gst > 0) {
+    if (o.state === "Madhya Pradesh") {
+      info.push(["CGST (2.5%)", `₹${Number(o.cgst).toLocaleString("en-IN")}`]);
+      info.push(["SGST (2.5%)", `₹${Number(o.sgst).toLocaleString("en-IN")}`]);
+    } else {
+      info.push(["IGST (5%)", `₹${Number(o.igst).toLocaleString("en-IN")}`]);
+    }
+    info.push(["Total GST", `₹${Number(o.total_gst).toLocaleString("en-IN")}`]);
+  }
+  info.push(["Grand Total", `₹${Number(o.total).toLocaleString("en-IN")}`]);
 
   info.forEach(([l, v]) => {
     doc.setTextColor(120); doc.text(l, m, y);
@@ -149,6 +159,7 @@ const generateOrderPDF = (o: any) => {
 
   doc.setFontSize(8);
   doc.setTextColor(150);
+  doc.text("* Transportation charges would be added to the final billing.", m, 275);
   doc.text("Thank you for your order — Hera Textiles", m, 280);
   doc.save(`Hera-Order-${o.id.slice(0, 8)}.pdf`);
 };
@@ -392,13 +403,41 @@ const OrderDetail = () => {
                   
                   <div className="pt-6">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal Rate</span>
-                      <span className="font-medium">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-medium">₹{Number(order.subtotal || order.total).toLocaleString("en-IN")}</span>
                     </div>
+                    {order.total_gst > 0 && (
+                      <div className="mt-4 space-y-2 border-t pt-2 text-xs">
+                        {order.state === "Madhya Pradesh" ? (
+                          <>
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>CGST (2.5%)</span>
+                              <span>₹{Number(order.cgst).toLocaleString("en-IN")}</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>SGST (2.5%)</span>
+                              <span>₹{Number(order.sgst).toLocaleString("en-IN")}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>IGST (5%)</span>
+                            <span>₹{Number(order.igst).toLocaleString("en-IN")}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-primary border-t pt-1">
+                          <span>Total GST</span>
+                          <span>₹{Number(order.total_gst).toLocaleString("en-IN")}</span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex justify-between mt-4 rounded-2xl bg-primary/5 p-5 border border-primary/10">
-                      <span className="font-bold text-lg">Total</span>
+                      <span className="font-bold text-lg">Grand Total</span>
                       <span className="text-2xl font-black text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
                     </div>
+                    <p className="mt-2 text-[10px] font-bold text-primary italic text-center">
+                      * Transportation charges would be added to the final billing.
+                    </p>
                   </div>
                 </div>
               </div>

@@ -436,10 +436,21 @@ const AdminDashboard = () => {
                       <p className="mt-1 text-sm text-muted-foreground">
                         {order.buyer_name} · {order.company_name} · {new Date(order.created_at).toLocaleDateString("en-IN")}
                       </p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{order.quantity}m</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">{order.quantity}m</span>
                         <span>·</span>
-                        <span>₹{Number(order.total).toLocaleString("en-IN")}</span>
+                        <span>Subtotal: ₹{Number(order.subtotal || order.total).toLocaleString("en-IN")}</span>
+                        {order.total_gst > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-primary font-medium">GST: ₹{Number(order.total_gst).toLocaleString("en-IN")}</span>
+                            <span className="text-[10px] bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
+                              {order.igst > 0 ? `IGST: ₹${order.igst}` : `CGST/SGST: ₹${order.cgst}+₹${order.sgst}`}
+                            </span>
+                          </>
+                        )}
+                        <span>·</span>
+                        <span className="font-bold text-foreground">Total: ₹{Number(order.total).toLocaleString("en-IN")}</span>
                         {order.items && Array.isArray(order.items) && order.items.length > 0 && (
                           <>
                             <span>·</span>

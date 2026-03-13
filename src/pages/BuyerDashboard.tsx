@@ -231,6 +231,11 @@ const BuyerDashboard = () => {
                           <span>{o.quantity}m</span>
                           <span>·</span>
                           <span className="font-medium text-foreground">₹{Number(o.total).toLocaleString("en-IN")}</span>
+                          {o.total_gst && Number(o.total_gst) > 0 && (
+                            <Badge variant="secondary" className="ml-2 text-[10px] bg-primary/5 text-primary border-primary/10">
+                              Incl. GST
+                            </Badge>
+                          )}
                         </div>
                         {o.items && Array.isArray(o.items) && (o.items as any[]).some(i => i.apcCode) && (
                           <div className="mt-2 text-[10px] text-primary font-bold bg-primary/5 px-2 py-1 rounded inline-block">

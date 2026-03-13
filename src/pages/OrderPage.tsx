@@ -29,6 +29,7 @@ const orderSchema = z.object({
   gstNumber: z.string().trim().max(15).regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$|^$/, "Invalid GST format").optional(),
   companyName: z.string().trim().min(1, "Company name is required").max(100),
   phone: z.string().trim().min(10, "Valid phone required").max(15),
+  state: z.string().min(1, "State is required"),
   email: z.string().trim().email("Valid email required").max(255),
   items: z.array(itemSchema).min(1, "At least one item is required"),
   deliveryAddress: z.string().trim().min(10, "Full address required").max(500),
@@ -88,6 +89,10 @@ const ColorSelector = ({ colors, selectedColor, onSelect }: { colors: string; se
     </div>
   );
 };
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
 
 const OrderPage = () => {
   const { fabricId } = useParams();
@@ -165,7 +170,7 @@ const OrderPage = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("gst_number, company_name, phone, delivery_address")
+        .select("gst_number, company_name, phone, delivery_address, state")
         .eq("user_id", user.id)
         .single() as any;
       if (data) {
@@ -178,6 +183,7 @@ const OrderPage = () => {
           phone: data.phone || "",
           email: user.email || "",
           deliveryAddress: data.delivery_address || "",
+          state: data.state || "Madhya Pradesh",
         }));
       } else {
         reset((prev) => ({ ...prev, email: user.email || "" }));
@@ -193,8 +199,17 @@ const OrderPage = () => {
   }, [gstLegalName]);
 
   const watchedItems = watch("items");
-  const total = fabric ? watchedItems.reduce((sum, item) => sum + (item.quantity * Number(fabric.price_per_meter)), 0) : 0;
+  const watchedState = watch("state");
+  const subtotal = fabric ? watchedItems.reduce((sum, item) => sum + (item.quantity * Number(fabric.price_per_meter)), 0) : 0;
   const totalQuantity = watchedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+  const gstRate = 0.05;
+  const isMP = watchedState === "Madhya Pradesh";
+  const cgst = isMP ? subtotal * (gstRate / 2) : 0;
+  const sgst = isMP ? subtotal * (gstRate / 2) : 0;
+  const igst = !isMP ? subtotal * gstRate : 0;
+  const totalGst = cgst + sgst + igst;
+  const totalWithTax = subtotal + totalGst;
 
   if (authLoading || fabricLoading) {
     return <div className="min-h-screen"><Navbar /><div className="container mx-auto flex min-h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div><Footer /></div>;
@@ -220,8 +235,14 @@ const OrderPage = () => {
       email: data.email,
       quantity: totalQuantity,
       price_per_meter: Number(fabric.price_per_meter),
-      total,
+      subtotal: subtotal,
+      cgst,
+      sgst,
+      igst,
+      total_gst: totalGst,
+      total: totalWithTax,
       delivery_address: data.deliveryAddress,
+      state: data.state,
       notes: data.notes || null,
       fabric_id_ref: fabric.id,
       selected_color: data.items.map(i => i.color).join(", "),
@@ -237,6 +258,7 @@ const OrderPage = () => {
       billing_name: data.billingName,
       company_name: data.companyName,
       phone: data.phone,
+      state: data.state,
       delivery_address: data.deliveryAddress,
     } as any).eq("user_id", user.id);
 
@@ -288,127 +310,236 @@ const OrderPage = () => {
                 <p className="mt-1 text-muted-foreground">Configure your order specifications</p>
               </div>
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div><Label htmlFor="billingName">Billing Name *</Label><Input id="billingName" {...register("billingName")} className="mt-1.5" placeholder="e.g. Rahul Sharma" />{errors.billingName && <p className="mt-1 text-sm text-destructive">{errors.billingName.message}</p>}</div>
-                <div><Label htmlFor="gstNumber">GST Number</Label><Input id="gstNumber" {...register("gstNumber")} className="mt-1.5" placeholder="e.g. 22AAAAA0000A1Z5" />{errors.gstNumber && <p className="mt-1 text-sm text-destructive">{errors.gstNumber.message}</p>}</div>
-                {gstLegalName && (
-                  <div className="sm:col-span-2 bg-muted/30 p-3 rounded-lg border border-dashed animate-in fade-in slide-in-from-top-1">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">GST Legal Name</Label>
-                    <p className="text-sm font-semibold text-primary">{gstLegalName}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 italic">Verified from GST record</p>
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-12">
+              {/* Section 1: Billing Information */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">1</div>
+                  <h2 className="text-xl font-bold tracking-tight">Billing Information</h2>
+                </div>
+                
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="billingName">Billing Legal Name *</Label>
+                    <Input id="billingName" {...register("billingName")} className="bg-background/50" placeholder="Person or Entity Name for Invoice" />
+                    {errors.billingName && <p className="text-xs text-destructive font-medium">{errors.billingName.message}</p>}
                   </div>
-                )}
-                <div><Label htmlFor="companyName">Company Name *</Label><Input id="companyName" {...register("companyName")} className="mt-1.5" />{errors.companyName && <p className="mt-1 text-sm text-destructive">{errors.companyName.message}</p>}</div>
-                <div><Label htmlFor="phone">Phone *</Label><Input id="phone" {...register("phone")} className="mt-1.5" />{errors.phone && <p className="mt-1 text-sm text-destructive">{errors.phone.message}</p>}</div>
-                <div><Label htmlFor="email">Email *</Label><Input id="email" type="email" {...register("email")} className="mt-1.5" />{errors.email && <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>}</div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="gstNumber">GST Number (Optional)</Label>
+                    <Input id="gstNumber" {...register("gstNumber")} className="bg-background/50" placeholder="e.g. 22AAAAA0000A1Z5" />
+                    {errors.gstNumber && <p className="text-xs text-destructive font-medium">{errors.gstNumber.message}</p>}
+                  </div>
+
+                  {gstLegalName && (
+                    <div className="sm:col-span-2 bg-primary/5 p-4 rounded-xl border border-primary/10 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        <Label className="text-[10px] text-primary uppercase font-black tracking-widest leading-none">Verified GST Entity</Label>
+                      </div>
+                      <p className="text-sm font-bold text-foreground pl-3">{gstLegalName}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Registered Company Name *</Label>
+                    <Input id="companyName" {...register("companyName")} className="bg-background/50" />
+                    {errors.companyName && <p className="text-xs text-destructive font-medium">{errors.companyName.message}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Billing State *</Label>
+                    <select
+                      id="state"
+                      {...register("state")}
+                      className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                    >
+                      {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {errors.state && <p className="text-xs text-destructive font-medium">{errors.state.message}</p>}
+                    <p className="text-[10px] text-muted-foreground italic pl-1 mt-1">Used for GST calculation (IGST vs CGST/SGST)</p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <h2 className="text-xl font-semibold">Order Items</h2>
+
+              {/* Section 2: Logistics & Contact */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">2</div>
+                  <h2 className="text-xl font-bold tracking-tight">Logistics & Contact Detail</h2>
+                </div>
+
+                <div className="grid gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryAddress">Delivery Address *</Label>
+                    <Textarea 
+                      id="deliveryAddress" 
+                      {...register("deliveryAddress")} 
+                      className="bg-background/50 min-h-[100px] resize-none" 
+                      placeholder="Street, Landmark, City, Pincode..."
+                    />
+                    {errors.deliveryAddress && <p className="text-xs text-destructive font-medium">{errors.deliveryAddress.message}</p>}
+                  </div>
+
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Contact Phone *</Label>
+                      <Input id="phone" {...register("phone")} className="bg-background/50" placeholder="+91 XXXXX XXXXX" />
+                      {errors.phone && <p className="text-xs text-destructive font-medium">{errors.phone.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Corporate Email *</Label>
+                      <Input id="email" type="email" {...register("email")} className="bg-background/50" placeholder="corporate@domain.com" />
+                      {errors.email && <p className="text-xs text-destructive font-medium">{errors.email.message}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Order Configuration */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">3</div>
+                    <h2 className="text-xl font-bold tracking-tight">Order Configuration</h2>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="h-8 gap-1.5 font-bold text-[10px] tracking-widest uppercase hover:bg-primary hover:text-primary-foreground transition-all"
                     onClick={() => append({ color: "", quantity: fabric.min_order, quantityType: "Lump" })}
                   >
-                    <Plus className="mr-1 h-4 w-4" /> Add Item
+                    <Plus className="h-3.5 w-3.5" /> Add Color variant
                   </Button>
                 </div>
 
-                {fields.map((field, index) => {
-                  const itemColor = watch(`items.${index}.color`);
-                  const itemQuantityType = watch(`items.${index}.quantityType`);
+                <div className="grid gap-6">
+                  {fields.map((field, index) => {
+                    const itemColor = watch(`items.${index}.color`);
+                    const itemQuantityType = watch(`items.${index}.quantityType`);
 
-                  return (
-                    <div key={field.id} className="relative rounded-xl border bg-card p-6 pt-10 sm:pt-6">
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-2 text-destructive hover:bg-destructive/10"
-                          onClick={() => remove(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      <div className="space-y-6">
-                        <div>
-                          <Label className="mb-2 block">Select Color *</Label>
-                          <ColorSelector
-                            colors={fabric.colors || ""}
-                            selectedColor={itemColor}
-                            onSelect={(color) => setValue(`items.${index}.color`, color)}
-                          />
-                          {errors.items?.[index]?.color && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.color?.message}</p>}
-                        </div>
-
-                        <div className="grid gap-6 sm:grid-cols-2">
-                          <div>
-                            <Label>Quantity Type *</Label>
-                            <RadioGroup
-                              defaultValue="Lump"
-                              value={itemQuantityType}
-                              onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v)}
-                              className="mt-3 flex gap-4"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Lump" id={`lump-${index}`} />
-                                <Label htmlFor={`lump-${index}`} className="font-normal cursor-pointer">Lump ({">"}40m)</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Cut Pack" id={`cutpack-${index}`} />
-                                <Label htmlFor={`cutpack-${index}`} className="font-normal cursor-pointer">Cut Pack (1.2m)</Label>
-                              </div>
-                            </RadioGroup>
-                          </div>
-
-                          <div>
-                            <Label htmlFor={`quantity-${index}`}>Quantity ({fabric.unit}) *</Label>
-                            <Input
-                              id={`quantity-${index}`}
-                              type="number"
-                              {...register(`items.${index}.quantity` as const, {
-                                validate: (val) => {
-                                  if (itemQuantityType === "Lump" && val < 40) return "Lump order must be at least 40m";
-                                  if (itemQuantityType === "Cut Pack") {
-                                    const isMultiple = Math.abs((val % 1.20)) < 0.01 || Math.abs((val % 1.20) - 1.20) < 0.01;
-                                    if (!isMultiple) return "Must be a multiple of 1.20m";
-                                  }
-                                  return true;
-                                },
-                              })}
-                              className="mt-1.5"
-                            />
-                            {errors.items?.[index]?.quantity && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.quantity?.message}</p>}
-                          </div>
-                        </div>
-
-                        {!!fabric?.apc_enabled && (
-                          <div className="mt-6 border-t pt-4">
-                            <Label htmlFor={`apc-${index}`}>APC Code (Optional)</Label>
-                            <Input
-                              id={`apc-${index}`}
-                              {...register(`items.${index}.apcCode` as const)}
-                              placeholder="Enter APC code for manual cutting"
-                              className="mt-1.5"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1 italic">
-                              * Share this code for manual fetching and cutting
-                            </p>
-                          </div>
+                    return (
+                      <div key={field.id} className="relative rounded-[2rem] border bg-card/30 backdrop-blur-sm p-8 shadow-sm transition-all hover:shadow-md ring-1 ring-border/50">
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-4 top-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full h-8 w-8"
+                            onClick={() => remove(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         )}
+
+                        <div className="space-y-8">
+                          <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">1. Select Color Tone *</Label>
+                            <ColorSelector
+                              colors={fabric.colors || ""}
+                              selectedColor={itemColor}
+                              onSelect={(color) => setValue(`items.${index}.color`, color)}
+                            />
+                            {errors.items?.[index]?.color && <p className="text-xs text-destructive font-medium mt-1">{errors.items[index]?.color?.message}</p>}
+                          </div>
+
+                          <div className="grid gap-8 sm:grid-cols-2">
+                            <div className="space-y-3">
+                              <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">2. Quantity Type *</Label>
+                              <RadioGroup
+                                defaultValue="Lump"
+                                value={itemQuantityType}
+                                onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v)}
+                                className="flex gap-4 p-1 bg-muted/50 rounded-xl"
+                              >
+                                <div className={`flex flex-1 items-center space-x-2 p-3 rounded-lg border transition-all cursor-pointer ${itemQuantityType === "Lump" ? "bg-background shadow-sm border-primary/20" : "border-transparent text-muted-foreground"}`} onClick={() => setValue(`items.${index}.quantityType`, "Lump")}>
+                                  <RadioGroupItem value="Lump" id={`lump-${index}`} className="sr-only" />
+                                  <Label htmlFor={`lump-${index}`} className="flex-1 cursor-pointer font-bold text-xs uppercase tracking-tighter">Lump (Min 40m)</Label>
+                                </div>
+                                <div className={`flex flex-1 items-center space-x-2 p-3 rounded-lg border transition-all cursor-pointer ${itemQuantityType === "Cut Pack" ? "bg-background shadow-sm border-primary/20" : "border-transparent text-muted-foreground"}`} onClick={() => setValue(`items.${index}.quantityType`, "Cut Pack")}>
+                                  <RadioGroupItem value="Cut Pack" id={`cutpack-${index}`} className="sr-only" />
+                                  <Label htmlFor={`cutpack-${index}`} className="flex-1 cursor-pointer font-bold text-xs uppercase tracking-tighter">Cut Pack (Max 20m)</Label>
+                                </div>
+                              </RadioGroup>
+                            </div>
+
+                            <div className="space-y-3">
+                              <Label htmlFor={`quantity-${index}`} className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">3. Requirement ({fabric.unit}) *</Label>
+                              <div className="relative">
+                                <Input
+                                  id={`quantity-${index}`}
+                                  type="number"
+                                  step="any"
+                                  {...register(`items.${index}.quantity` as const, {
+                                    validate: (val) => {
+                                      if (itemQuantityType === "Lump" && val < 40) return "Lump packing must be at least 40m";
+                                      if (itemQuantityType === "Cut Pack" && val > 20) {
+                                        return "Max 20m for Cut Pack. For larger orders, please select Lump packing (>40m).";
+                                      }
+                                      return true;
+                                    },
+                                  })}
+                                  className="h-12 bg-background/50 font-bold text-lg rounded-xl pr-12 focus:ring-primary/10"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-muted-foreground uppercase">{fabric.unit}</span>
+                              </div>
+                              {errors.items?.[index]?.quantity && <p className="text-xs text-destructive font-semibold mt-1 animate-pulse">{errors.items[index]?.quantity?.message}</p>}
+                            </div>
+                          </div>
+
+                          {!!fabric?.apc_enabled && (
+                            <div className="bg-muted/30 p-4 rounded-2xl border border-dashed hover:border-primary/30 transition-colors">
+                              <Label htmlFor={`apc-${index}`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">APC Code (Dyeing Unit Reference)</Label>
+                              <Input
+                                id={`apc-${index}`}
+                                {...register(`items.${index}.apcCode` as const)}
+                                placeholder="Enter APC code for precision matching"
+                                className="h-10 bg-background/50 border-white/10 rounded-xl"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              <div><Label htmlFor="deliveryAddress">Delivery Address *</Label><Textarea id="deliveryAddress" {...register("deliveryAddress")} className="mt-1.5" rows={3} />{errors.deliveryAddress && <p className="mt-1 text-sm text-destructive">{errors.deliveryAddress.message}</p>}</div>
-              <div><Label htmlFor="notes">Additional Notes</Label><Textarea id="notes" {...register("notes")} className="mt-1.5" rows={2} placeholder="Special requirements, shipping instructions, etc." /></div>
-              <Button type="submit" size="lg" className="w-full sm:w-auto">Place Order — ₹{total.toLocaleString("en-IN")}</Button>
+              {/* Section 4: Finalization */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">4</div>
+                  <h2 className="text-xl font-bold tracking-tight">Finalization</h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Special Requirements / Shipping Notes</Label>
+                    <Textarea 
+                      id="notes" 
+                      {...register("notes")} 
+                      className="bg-background/50 min-h-[80px] resize-none" 
+                      placeholder="Any specific instructions for processing or dispatch..." 
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full h-16 text-lg font-black tracking-[0.1em] rounded-2xl shadow-xl shadow-primary/20 transition-all hover:translate-y-[-2px] hover:shadow-2xl active:scale-95 group uppercase"
+                  >
+                    <span className="flex items-center gap-3">
+                      GENERATE PURCHASE ORDER — ₹{totalWithTax.toLocaleString("en-IN")}
+                    </span>
+                  </Button>
+                  <p className="text-center text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold mt-4 animate-pulse">
+                    * Final logistics charges will be added post-dispatch
+                  </p>
+                </div>
+              </div>
             </form>
           </div>
           <div className="lg:col-span-1">
@@ -430,10 +561,27 @@ const OrderPage = () => {
                 </div>
 
                 <div className="flex justify-between"><span className="text-muted-foreground">Rate</span><span>₹{Number(fabric.price_per_meter).toLocaleString("en-IN")}/meter</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between font-medium text-xs">
+                  <span className="text-muted-foreground">GST (5%)</span>
+                  <div className="text-right">
+                    {isMP ? (
+                      <>
+                        <div>CGST (2.5%): ₹{cgst.toLocaleString("en-IN")}</div>
+                        <div>SGST (2.5%): ₹{sgst.toLocaleString("en-IN")}</div>
+                      </>
+                    ) : (
+                      <div>IGST (5%): ₹{igst.toLocaleString("en-IN")}</div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Quantity</span><span>{totalQuantity} {fabric.unit}</span></div>
                 <div className="border-t pt-3">
-                  <div className="flex justify-between"><span className="font-semibold">Estimated Total</span><span className="text-xl font-bold text-primary">₹{total.toLocaleString("en-IN")}</span></div>
-                  <p className="mt-1 text-xs text-muted-foreground">Final price may vary. Payment details shared after confirmation.</p>
+                  <div className="flex justify-between"><span className="font-semibold">Grand Total</span><span className="text-xl font-bold text-primary">₹{totalWithTax.toLocaleString("en-IN")}</span></div>
+                  <p className="mt-1 text-xs text-muted-foreground">Inclusive of all taxes.</p>
+                  <p className="mt-2 text-[10px] font-bold text-primary animate-pulse italic">
+                    * Transportation charges would be added to the final billing.
+                  </p>
                 </div>
               </div>
             </div>
