@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import namer from "color-namer";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Package, TrendingUp, Users, ClipboardList, Plus, Edit, Trash2, MessageSquare, BarChart3, Truck, X
@@ -49,12 +51,16 @@ const AdminDashboard = () => {
   const [editingFabric, setEditingFabric] = useState<Fabric | null>(null);
   const [fabricForm, setFabricForm] = useState({
     name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0,
-    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "",
+    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "", apc_enabled: false,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Color picker form
+  const [colorName, setColorName] = useState("");
+  const [colorHex, setColorHex] = useState("#000000");
 
   // Note form
   const [noteDialog, setNoteDialog] = useState<string | null>(null);
@@ -233,15 +239,18 @@ const AdminDashboard = () => {
         available: fabric.available, image_url: fabric.image_url || "",
         gsm: fabric.gsm?.toString() || "", weave: fabric.weave || "", width: fabric.width || "",
         composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "", category: fabric.category || "",
+        apc_enabled: fabric.apc_enabled || false,
       });
       // Fetch existing images
       const { data } = await supabase.from("fabric_images").select("*").eq("fabric_id", fabric.id).order("sort_order");
       setExistingImages(data || []);
     } else {
       setEditingFabric(null);
-      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "" });
+      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "", apc_enabled: false });
       setExistingImages([]);
     }
+    setColorName("");
+    setColorHex("#000000");
     setFabricDialog(true);
   };
 
@@ -261,6 +270,7 @@ const AdminDashboard = () => {
       gsm: fabricForm.gsm ? parseInt(fabricForm.gsm) : null, weave: fabricForm.weave || null,
       width: fabricForm.width || null, composition: fabricForm.composition || null,
       finish: fabricForm.finish || null, shrinkage: fabricForm.shrinkage || null, category: fabricForm.category || null,
+      apc_enabled: fabricForm.apc_enabled,
     };
 
     let error;
@@ -298,11 +308,16 @@ const AdminDashboard = () => {
       if (!uploadError) {
         const { data: { publicUrl } } = supabase.storage.from("fabric-images").getPublicUrl(fileName);
 
-        await supabase.from("fabric_images").insert({
+        const { error: dbError } = await supabase.from("fabric_images").insert({
           fabric_id: fabricId,
           image_url: publicUrl,
           sort_order: sortOrderOffset + i
         });
+        
+        if (dbError) {
+          console.error("fabric_images insert error:", dbError);
+          toast.error(`Failed to save image reference: ${dbError.message}`);
+        }
 
         // Set the first uploaded image as main image if there is no main image set
         if (!mainImageUrl && i === 0) {
@@ -310,7 +325,8 @@ const AdminDashboard = () => {
           await supabase.from("fabrics").update({ image_url: mainImageUrl }).eq("id", fabricId);
         }
       } else {
-        toast.error(`Failed to upload image: ${file.name}`);
+        console.error("Storage upload error:", uploadError);
+        toast.error(`Failed to upload ${file.name}: ${uploadError.message || 'Unknown error'}`);
       }
     }
 
@@ -333,8 +349,31 @@ const AdminDashboard = () => {
     else { toast.success("Fabric deleted"); fetchAll(); }
   };
 
-  const respondToQuote = async (quoteId: string, response: string, status: string) => {
-    const { error } = await supabase.from("quote_requests").update({ admin_response: response, status }).eq("id", quoteId);
+  const respondToQuote = async (quoteId: string, response: string, status: string, newPrice?: number) => {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return;
+    
+    // Add counter-offer text to the response if provided
+    let fullResponse = response;
+    if (newPrice) {
+      fullResponse += `\n\nCounter Offer: ₹${newPrice.toLocaleString("en-IN")}/m`;
+    }
+
+    const newMessage = {
+      sender: "admin",
+      text: fullResponse,
+      timestamp: new Date().toISOString()
+    };
+    
+    const messages = quote.messages || [];
+    const updatedMessages = [...messages, newMessage];
+
+    const { error } = await supabase.from("quote_requests").update({ 
+      admin_response: fullResponse, 
+      status,
+      messages: updatedMessages
+    }).eq("id", quoteId);
+    
     if (error) toast.error("Failed to respond");
     else { toast.success("Quote updated"); fetchAll(); }
   };
@@ -397,10 +436,21 @@ const AdminDashboard = () => {
                       <p className="mt-1 text-sm text-muted-foreground">
                         {order.buyer_name} · {order.company_name} · {new Date(order.created_at).toLocaleDateString("en-IN")}
                       </p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{order.quantity}m</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">{order.quantity}m</span>
                         <span>·</span>
-                        <span>₹{Number(order.total).toLocaleString("en-IN")}</span>
+                        <span>Subtotal: ₹{Number(order.subtotal || order.total).toLocaleString("en-IN")}</span>
+                        {order.total_gst > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-primary font-medium">GST: ₹{Number(order.total_gst).toLocaleString("en-IN")}</span>
+                            <span className="text-[10px] bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
+                              {order.igst > 0 ? `IGST: ₹${order.igst}` : `CGST/SGST: ₹${order.cgst}+₹${order.sgst}`}
+                            </span>
+                          </>
+                        )}
+                        <span>·</span>
+                        <span className="font-bold text-foreground">Total: ₹{Number(order.total).toLocaleString("en-IN")}</span>
                         {order.items && Array.isArray(order.items) && order.items.length > 0 && (
                           <>
                             <span>·</span>
@@ -408,6 +458,11 @@ const AdminDashboard = () => {
                           </>
                         )}
                       </div>
+                      {order.items && Array.isArray(order.items) && (order.items as any[]).some(i => i.apcCode) && (
+                        <div className="mt-2 text-[10px] text-primary font-bold bg-primary/5 px-2 py-1 rounded inline-block">
+                          APC Codes: {(order.items as any[]).filter(i => i.apcCode).map(i => `${i.color?.split(":")[0]}: ${i.apcCode}`).join(", ")}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Select defaultValue={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
@@ -445,7 +500,13 @@ const AdminDashboard = () => {
                     {f.image_url && <img src={f.image_url} alt={f.name} className="h-12 w-12 rounded-lg object-cover" />}
                     <div>
                       <p className="font-medium">{f.name}</p>
-                      <p className="text-xs text-muted-foreground">{f.type} · ₹{Number(f.price_per_meter).toLocaleString("en-IN")}/m · {f.available ? "In Stock" : "Out of Stock"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {f.type} · ₹{Number(f.price_per_meter).toLocaleString("en-IN")}/m · {f.available ? "In Stock" : "Out of Stock"}
+                        {f.apc_enabled && <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 ml-2">APC ENABLED</Badge>}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px] truncate">
+                        Colors: {f.colors?.split(",").map(c => c.split(":")[0].trim()).join(", ")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -477,21 +538,86 @@ const AdminDashboard = () => {
                           <>
                             <span>·</span>
                             <Badge variant="secondary" className="text-[10px] h-4 px-1">{q.items.length} colors</Badge>
+                            <span className="text-[10px] ml-1">
+                              ({q.items.map((i: any) => i.color?.split(":")[0].trim()).join(", ")})
+                            </span>
                           </>
                         )}
                       </div>
-                      {q.message && <p className="mt-2 text-sm">{q.message}</p>}
+                      {q.message && !q.messages?.length && <p className="mt-2 text-sm">{q.message}</p>}
+                      {q.items && Array.isArray(q.items) && (q.items as any[]).some(i => i.apcCode) && (
+                        <div className="mt-2 text-[10px] text-primary font-bold bg-primary/5 px-2 py-1 rounded inline-block">
+                          APC Codes: {(q.items as any[]).filter(i => i.apcCode).map(i => `${i.color?.split(":")[0]}: ${i.apcCode}`).join(", ")}
+                        </div>
+                      )}
                       </div>
                     </div>
                     <Badge variant="outline">{q.status}</Badge>
                   </div>
-                  {q.status === "Pending" && (
-                    <div className="mt-4 flex gap-2">
-                      <Button size="sm" onClick={() => {
-                        const response = prompt("Enter response to buyer:");
-                        if (response) respondToQuote(q.id, response, "Responded");
-                      }}>Respond</Button>
-                      <Button size="sm" variant="destructive" onClick={() => respondToQuote(q.id, "Declined", "Declined")}>Decline</Button>
+                  
+                  {/* Messages Thread */}
+                  <div className="mt-4 space-y-3 bg-muted/30 p-4 rounded-lg">
+                    {/* Initial message */}
+                    {q.message && (
+                      <div className="flex flex-col items-start text-sm">
+                        <span className="font-semibold text-xs text-muted-foreground mb-1">Buyer (Initial)</span>
+                        <div className="bg-background border rounded-md px-3 py-2 max-w-[80%]">
+                          {q.message}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Chat history */}
+                    {q.messages && Array.isArray(q.messages) && q.messages.map((msg: any, idx: number) => (
+                      <div key={idx} className={`flex flex-col text-sm ${msg.sender === 'admin' ? 'items-end' : 'items-start'}`}>
+                        <span className="font-semibold text-xs text-muted-foreground mb-1">
+                          {msg.sender === 'admin' ? 'You' : 'Buyer'}
+                        </span>
+                        <div className={`rounded-md px-3 py-2 max-w-[80%] whitespace-pre-line ${
+                          msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-background border'
+                        }`}>
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {q.status !== "Declined" && q.status !== "Accepted" && (
+                    <div className="mt-4 flex flex-col gap-2 border-t pt-4">
+                      <Label>Send Response / Counter Offer</Label>
+                      <Textarea 
+                        id={`reply-${q.id}`} 
+                        placeholder="Type your message here..." 
+                        className="min-h-[80px]" 
+                      />
+                      <div className="flex gap-2 items-center mt-2">
+                        <div className="flex-1 max-w-[200px]">
+                          <Label className="text-xs mb-1 block">Counter Price (Optional)</Label>
+                          <Input id={`price-${q.id}`} type="number" placeholder="₹/m" />
+                        </div>
+                        <div className="ml-auto flex gap-2 self-end">
+                          <Button size="sm" onClick={() => {
+                            const responseBox = document.getElementById(`reply-${q.id}`) as HTMLTextAreaElement;
+                            const priceBox = document.getElementById(`price-${q.id}`) as HTMLInputElement;
+                            if (responseBox?.value) {
+                              respondToQuote(
+                                q.id, 
+                                responseBox.value, 
+                                "Responded", 
+                                priceBox?.value ? Number(priceBox.value) : undefined
+                              );
+                              responseBox.value = "";
+                              if(priceBox) priceBox.value = "";
+                            } else {
+                              toast.error("Please enter a response message");
+                            }
+                          }}>Send Reply</Button>
+                          <Button size="sm" variant="outline" className="text-success border-success hover:bg-success hover:text-success-foreground transition-colors" onClick={() => respondToQuote(q.id, "Admin Approved Offer", "Accepted")}>Approve</Button>
+                          {q.status === "Pending" && (
+                            <Button size="sm" variant="destructive" onClick={() => respondToQuote(q.id, "Declined Quote", "Declined")}>Decline</Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -577,16 +703,82 @@ const AdminDashboard = () => {
               </Select>
             </div>
             <div><Label>Type *</Label><Input value={fabricForm.type} onChange={(e) => setFabricForm((p) => ({ ...p, type: e.target.value }))} className="mt-1.5" /></div>
-            <div>
+            <div className="sm:col-span-2">
               <Label>Colors</Label>
+              <div className="mt-1.5 flex gap-2 items-center">
+                <Input placeholder="Color Name (e.g. Red)" value={colorName} onChange={(e) => setColorName(e.target.value)} className="flex-1" />
+                <div className="flex items-center gap-2 border rounded-md p-1 pl-3 bg-muted/30">
+                  <span className="text-sm">Hex:</span>
+                  <input 
+                    type="color" 
+                    value={colorHex} 
+                    onChange={(e) => {
+                      const hex = e.target.value;
+                      setColorHex(hex);
+                      // Automatically name the color
+                      const names = namer(hex);
+                      if (names && names.ntc && names.ntc[0]) {
+                        setColorName(names.ntc[0].name);
+                      }
+                    }} 
+                    className="w-8 h-8 rounded cursor-pointer" 
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={() => {
+                  if (colorName.trim()) {
+                    const newColor = `${colorName.trim()}:${colorHex}`;
+                    setFabricForm(p => ({ ...p, colors: p.colors ? `${p.colors}, ${newColor}` : newColor }));
+                    // Don't clear name immediately so user can see what was added, or clear it?
+                    // Let's clear it for next entry.
+                    setColorName("");
+                  } else {
+                    toast.error("Please provide a name for the color");
+                  }
+                }}>Add</Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2 p-2 border rounded-md bg-muted/10 min-h-[40px]">
+                {fabricForm.colors.split(",").filter(c => c.trim()).map((c, i) => {
+                  const parts = c.split(":");
+                  const name = parts[0]?.trim();
+                  const hex = parts[1]?.trim();
+                  return (
+                    <Badge key={i} variant="outline" className="flex items-center gap-1.5 px-2 py-1">
+                      <div className="w-3 h-3 rounded-full border border-black/10" style={{ backgroundColor: hex || '#ccc' }} />
+                      <span>{name}</span>
+                      <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => {
+                        const newColors = fabricForm.colors.split(",").filter((_, idx) => idx !== i).join(", ");
+                        setFabricForm(p => ({ ...p, colors: newColors }));
+                      }} />
+                    </Badge>
+                  );
+                })}
+                {fabricForm.colors.split(",").filter(c => c.trim()).length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">No colors added yet</span>
+                )}
+              </div>
               <Input 
                 value={fabricForm.colors} 
                 onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))} 
-                className="mt-1.5" 
-                placeholder="Red:#FF0000, Blue:#0000FF"
+                className="mt-2 text-xs text-muted-foreground font-mono" 
+                placeholder="Internal format: Name:#HexCode, ..."
+                readOnly
               />
-              <p className="text-[10px] text-muted-foreground mt-1">Format: Name:HexCode, ... (e.g. Red:#FF0000)</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Format: Name:HexCode, ... (e.g. Red:#FF0000). You can also type directly.</p>
             </div>
+            
+            <div className="flex items-center justify-between rounded-lg border p-4 bg-primary/5">
+              <div className="space-y-0.5">
+                <Label className="text-base">Enable APC Support</Label>
+                <p className="text-xs text-muted-foreground">
+                  Show APC Code field in order and quote forms for this fabric.
+                </p>
+              </div>
+              <Switch 
+                checked={fabricForm.apc_enabled} 
+                onCheckedChange={(v) => setFabricForm(p => ({ ...p, apc_enabled: v }))} 
+              />
+            </div>
+
             <div><Label>Price/Meter (₹)</Label><Input type="number" value={fabricForm.price_per_meter} onChange={(e) => setFabricForm((p) => ({ ...p, price_per_meter: Number(e.target.value) }))} className="mt-1.5" /></div>
             <div><Label>Min Order</Label><Input type="number" value={fabricForm.min_order} onChange={(e) => setFabricForm((p) => ({ ...p, min_order: Number(e.target.value) }))} className="mt-1.5" /></div>
             <div><Label>Unit</Label><Input value={fabricForm.unit} onChange={(e) => setFabricForm((p) => ({ ...p, unit: e.target.value }))} className="mt-1.5" /></div>
@@ -729,7 +921,10 @@ const AdminRolesManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold">Manage User Access</h3>
+        <div>
+          <h3 className="font-display text-lg font-semibold">Manage User Access</h3>
+          <p className="text-sm text-muted-foreground mt-1">New admins must sign up first before they can be granted admin privileges here.</p>
+        </div>
         <div className="relative w-64">
           <Input 
             placeholder="Search users..." 
