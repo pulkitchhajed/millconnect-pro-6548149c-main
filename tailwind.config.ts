@@ -15,7 +15,13 @@ export default {
     extend: {
       fontFamily: {
         sans: ["DM Sans", "system-ui", "sans-serif"],
-        display: ["Playfair Display", "serif"],
+        display: ["Outfit", "sans-serif"],
+        serif: ["Playfair Display", "serif"],
+      },
+      boxShadow: {
+        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        'premium': '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
+        'deep': '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
       },
       colors: {
         border: "hsl(var(--border))",

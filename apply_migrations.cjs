@@ -9,9 +9,8 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS selected_color TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity_type TEXT NOT NULL DEFAULT 'Lump';
 ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS selected_color TEXT;
 ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS quantity_type TEXT NOT NULL DEFAULT 'Lump';
-ALTER TABLE public.quote_requests ADD COLUMN IF NOT EXISTS messages JSONB DEFAULT '[]'::jsonb;
 
--- Update trigger for admin seeding
+-- Update trigger for profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -20,25 +19,12 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.profiles (user_id)
-  VALUES (NEW.id);
-  
-  -- Auto-grant admin role to specific email
-  IF NEW.email = 'pulkitchhajed29@gmail.com' THEN
-    -- Check if user_roles table exists and add it if not (safety check)
-    INSERT INTO public.user_roles (user_id, role)
-    VALUES (NEW.id, 'admin')
-    ON CONFLICT DO NOTHING;
-  END IF;
+  VALUES (NEW.id)
+  ON CONFLICT (user_id) DO NOTHING;
   
   RETURN NEW;
 END;
 $$;
-
--- Seed existing user if present
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin'::public.app_role FROM auth.users 
-WHERE email = 'pulkitchhajed29@gmail.com'
-ON CONFLICT DO NOTHING;
 `;
 
 async function apply() {
