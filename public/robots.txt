@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 User-agent: *
 Allow: /
 Disallow: /admin
@@ -20,3 +21,19 @@ User-agent: PerplexityBot
 Allow: /
 
 Sitemap: https://mill-connect.com/sitemap.xml
+=======
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
