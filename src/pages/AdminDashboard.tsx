@@ -14,146 +14,37 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, SlidersHorizontal, Package, LayoutGrid, Trash2, Edit, ChevronLeft, ChevronRight, Import, Clipboard, MousePointer2, Settings, Truck, Wand2, CheckCircle, Clock, Users, ClipboardList, TrendingUp, BarChart3, MessageSquare, X, Image as ImageIcon, MapPin, Scan, PlusCircle, CreditCard } from "lucide-react";
-import { ColorSwatchList } from "@/components/ColorSwatch.tsx";
+import {
+<<<<<<< HEAD
+  Package, TrendingUp, Users, ClipboardList, Plus, Edit, Trash2, MessageSquare, BarChart3, Truck, X
+=======
+  Package, TrendingUp, Users, ClipboardList, Plus, Edit, Trash2, MessageSquare, BarChart3, Truck,
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Fabric } from "@/hooks/useFabrics";
 
-type ColorLibrary = {
-  id: string;
-  name: string;
-  colors: string;
-  created_at: string;
-};
-
-const statusSteps = ["Pending", "Confirmed", "Advance Payment Received", "Bill Amount Received", "Staged", "Shipped", "Delivered", "Cancelled"];
+<<<<<<< HEAD
+const statusSteps = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
+=======
+const statusSteps = ["Pending", "Confirmed", "In Production", "Shipped", "Delivered"];
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   Confirmed: "bg-primary/10 text-primary border-primary/20",
-  "Advance Payment Received": "bg-secondary/10 text-secondary border-secondary/20",
-  "Bill Amount Received": "bg-success/10 text-success border-success/20",
-  Staged: "bg-secondary/15 text-secondary border-secondary/30",
+<<<<<<< HEAD
   Shipped: "bg-success/10 text-success border-success/20",
   Delivered: "bg-success/15 text-success border-success/30",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
-};
-
-// Admin Roles Manager sub-component
-const AdminRolesManager = () => {
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
-  const fetchData = async () => {
-    setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("*")
-    ]);
-
-    setProfiles(profilesRes.data || []);
-    setRoles(rolesRes.data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  const toggleAdmin = async (userId: string, currentRole?: string) => {
-    if (currentRole === "admin") {
-      // Revoke
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", "admin");
-
-      if (error) toast.error("Failed to revoke admin rights");
-      else {
-        toast.success("Admin rights revoked");
-        fetchData();
-      }
-    } else {
-      // Grant
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: userId, role: "admin" });
-
-      if (error) toast.error("Failed to grant admin rights");
-      else {
-        toast.success("Admin rights granted");
-        fetchData();
-      }
-    }
-  };
-
-  const filteredProfiles = profiles.filter(p =>
-    p.buyer_name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold">Manage User Access</h3>
-        <div className="relative w-64">
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
-          <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {loading ? (
-          <p className="text-center text-muted-foreground py-10">Loading users...</p>
-        ) : filteredProfiles.length === 0 ? (
-          <p className="text-center text-muted-foreground py-10">No users found.</p>
-        ) : (
-          filteredProfiles.map((p) => {
-            const isAdmin = roles.some(r => r.user_id === p.user_id && r.role === "admin");
-            return (
-              <div key={p.id} className="flex items-center justify-between rounded-2xl border bg-white p-5 transition-premium hover:shadow-premium hover:-translate-y-0.5">
-                <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/5 text-primary text-lg font-black shadow-inner">
-                    {p.buyer_name?.[0] || "?"}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg leading-none">{p.buyer_name || "New User"}</h4>
-                    <p className="mt-1.5 text-xs text-muted-foreground font-medium">
-                      Joined <span className="text-foreground/80 font-bold">{new Date(p.created_at).toLocaleDateString()}</span> · {p.user_id.slice(0, 8)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {isAdmin ? (
-                    <Badge className="bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-soft">Admin Access</Badge>
-                  ) : (
-                    <Badge variant="outline" className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground border-dashed">Standard Buyer</Badge>
-                  )}
-                  <Button
-                    variant={isAdmin ? "destructive" : "outline"}
-                    size="sm"
-                    className="rounded-xl px-5 font-bold shadow-soft transition-premium active:scale-95"
-                    onClick={() => toggleAdmin(p.user_id, isAdmin ? "admin" : undefined)}
-                  >
-                    {isAdmin ? "Revoke Access" : "Grant Access"}
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
+=======
+  "In Production": "bg-secondary/10 text-secondary border-secondary/20",
+  Shipped: "bg-success/10 text-success border-success/20",
+  Delivered: "bg-success/15 text-success border-success/30",
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 };
 
 const AdminDashboard = () => {
@@ -164,26 +55,25 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
-  const [sampleRequests, setSampleRequests] = useState<any[]>([]);
-  const [samplePacks, setSamplePacks] = useState<any[]>([]);
-  const [designRequests, setDesignRequests] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, monthlyOrders: 0, revenue: 0, topFabrics: [] as any[], topBuyers: [] as any[] });
   const [loading, setLoading] = useState(true);
 
   // Fabric form
   const [fabricDialog, setFabricDialog] = useState(false);
   const [editingFabric, setEditingFabric] = useState<Fabric | null>(null);
-  const [fabricForm, setFabricForm] = useState<{
-    name: string; type: string; description: string; colors: string; min_order: number; price_per_meter: number;
-    unit: string; available: boolean; is_featured: boolean; apc_available: boolean; image_url: string; gm: string; weave: string; width: string; composition: string; finish: string; shrinkage: string; category: string;
-  }>({
+  const [fabricForm, setFabricForm] = useState({
     name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0,
-    unit: "meters", available: true, is_featured: false, apc_available: false, image_url: "", gm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "",
+<<<<<<< HEAD
+    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+=======
+    unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "",
+  });
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 
   // Note form
   const [noteDialog, setNoteDialog] = useState<string | null>(null);
@@ -193,73 +83,22 @@ const AdminDashboard = () => {
   const [shipmentDialog, setShipmentDialog] = useState<string | null>(null);
   const [shipmentForm, setShipmentForm] = useState({ courier_name: "", tracking_number: "", dispatch_date: "" });
 
-  // Payment Request form
-  const [paymentDialog, setPaymentDialog] = useState<string | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ payment_link: "", payment_message: "" });
-
-  // Color Library state
-  const [colorLibraries, setColorLibraries] = useState<ColorLibrary[]>([]);
-  const [colorLibraryDialog, setColorLibraryDialog] = useState(false);
-  const [editingLibrary, setEditingLibrary] = useState<ColorLibrary | null>(null);
-  const [libraryForm, setLibraryForm] = useState({ name: "", colors: "" });
-
-  // Advanced Color Manager state (for use within the fabric form)
-  const [colorManagerOpen, setColorManagerOpen] = useState(false);
-  const [bulkColorText, setBulkColorText] = useState("");
-  const [visualPickerImage, setVisualPickerImage] = useState<string | null>(null);
-  const [pickedColors, setPickedColors] = useState<{ name: string, hex: string }[]>([]);
-
-  // Sample Pack form
-  const [samplePackDialog, setSamplePackDialog] = useState(false);
-  const [editingSamplePack, setEditingSamplePack] = useState<any | null>(null);
-  const [samplePackForm, setSamplePackForm] = useState({
-    name: "", pack_type: "category", category: "", max_items: 5, fabric_ids: [] as string[], price: 0, active: true
-  });
-  const [orderDetailDialog, setOrderDetailDialog] = useState(false);
-  const [viewingOrder, setViewingOrder] = useState<any | null>(null);
-
-  // Design request response form
-  const [designResponseDialog, setDesignResponseDialog] = useState<string | null>(null);
-  const [designResponseForm, setDesignResponseForm] = useState({
-    admin_availability: "Available",
-    admin_program: "",
-    admin_weight: "",
-    admin_price: 0,
-    admin_note: ""
-  });
-
-  async function fetchAll() {
-    const [ordersRes, fabricsRes, quotesRes, librariesRes] = await Promise.all([
-      supabase.from("orders").select("*, fabrics:fabric_id_ref(image_url)").order("created_at", { ascending: false }) as any,
-      supabase.from("fabrics").select("*").order("created_at", { ascending: true }) as any,
-      supabase.from("quote_requests").select("*, fabrics:fabric_id(image_url)").order("created_at", { ascending: false }) as any,
-      supabase.from("color_libraries" as any).select("*").order("name", { ascending: true }),
+  const fetchAll = async () => {
+    const [ordersRes, fabricsRes, quotesRes] = await Promise.all([
+<<<<<<< HEAD
+      supabase.from("orders").select("*, fabrics:fabric_id_ref(image_url)").order("created_at", { ascending: false }),
+      supabase.from("fabrics").select("*").order("created_at", { ascending: true }),
+      supabase.from("quote_requests").select("*, fabrics:fabric_id(image_url)").order("created_at", { ascending: false }),
+=======
+      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase.from("fabrics").select("*").order("created_at", { ascending: true }),
+      supabase.from("quote_requests").select("*").order("created_at", { ascending: false }),
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
     ]);
     const allOrders = ordersRes.data || [];
     setOrders(allOrders);
     setFabrics((fabricsRes.data || []) as Fabric[]);
     setQuotes(quotesRes.data || []);
-    setColorLibraries((librariesRes.data || []) as any);
-    const samplesRes = await supabase.from("sample_requests").select("*").order("created_at", { ascending: false });
-    setSampleRequests(samplesRes.data || []);
-    const packsRes = await supabase.from("sample_packs").select("*").order("created_at", { ascending: false });
-    setSamplePacks(packsRes.data || []);
-    const { data: designs, error: designError } = await supabase
-      .from("design_requests" as any)
-      .select("*, profiles!inner(buyer_name, billing_name)")
-      .order("created_at", { ascending: false });
-
-    if (designError) {
-      console.error("Design requests fetch error:", designError);
-      // Fallback to simple fetch if join fails
-      const { data: fallbackData } = await supabase
-        .from("design_requests" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
-      setDesignRequests(fallbackData || []);
-    } else {
-      setDesignRequests(designs || []);
-    }
 
     // Analytics
     const now = new Date();
@@ -278,7 +117,7 @@ const AdminDashboard = () => {
     // Top buyers
     const buyerCount: Record<string, { name: string; total: number }> = {};
     allOrders.forEach((o) => {
-      const key = o.billing_name || o.buyer_name;
+      const key = o.company_name || o.buyer_name;
       if (!buyerCount[key]) buyerCount[key] = { name: key, total: 0 };
       buyerCount[key].total += Number(o.total);
     });
@@ -286,7 +125,7 @@ const AdminDashboard = () => {
 
     setStats({ totalOrders: allOrders.length, monthlyOrders: monthly, revenue, topFabrics, topBuyers });
     setLoading(false);
-  }
+  };
 
   useEffect(() => {
     if (isAdmin) fetchAll();
@@ -310,59 +149,7 @@ const AdminDashboard = () => {
     return <div className="min-h-screen"><Navbar /><div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4"><div className="text-center"><h1 className="font-display text-2xl font-bold">Access Denied</h1><p className="mt-2 text-muted-foreground">You don't have admin permissions.</p><Button className="mt-4" onClick={() => navigate("/")}>Go Home</Button></div></div><Footer /></div>;
   }
 
-  const openLibraryForm = (library?: ColorLibrary) => {
-    if (library) {
-      setEditingLibrary(library);
-      setLibraryForm({ name: library.name, colors: library.colors });
-    } else {
-      setEditingLibrary(null);
-      setLibraryForm({ name: "", colors: "" });
-    }
-    setColorLibraryDialog(true);
-  };
-
-  const saveLibrary = async () => {
-    if (!libraryForm.name) {
-      toast.error("Library name is required");
-      return;
-    }
-
-    if (editingLibrary) {
-      const { error } = await supabase
-        .from("color_libraries" as any)
-        .update({ name: libraryForm.name, colors: libraryForm.colors } as any)
-        .eq("id", editingLibrary.id);
-
-      if (error) toast.error("Failed to update library: " + error.message);
-      else {
-        toast.success("Library updated");
-        setColorLibraryDialog(false);
-        fetchAll();
-      }
-    } else {
-      const { error } = await supabase
-        .from("color_libraries" as any)
-        .insert({ name: libraryForm.name, colors: libraryForm.colors } as any);
-
-      if (error) toast.error("Failed to create library: " + error.message);
-      else {
-        toast.success("Library created");
-        setColorLibraryDialog(false);
-        fetchAll();
-      }
-    }
-  };
-
-  const deleteLibrary = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this library?")) return;
-    const { error } = await supabase.from("color_libraries" as any).delete().eq("id", id);
-    if (error) toast.error("Failed to delete library");
-    else {
-      toast.success("Library deleted");
-      fetchAll();
-    }
-  };
-
+<<<<<<< HEAD
   const sendEmailNotification = async (order: any, type: 'status' | 'note', extraData?: string) => {
     console.log("Triggering email notification for:", order.email, type, extraData);
     const subject = type === 'status'
@@ -428,6 +215,12 @@ const AdminDashboard = () => {
       }
       fetchAll();
     }
+=======
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (error) toast.error("Failed to update status");
+    else { toast.success(`Status updated to ${status}`); fetchAll(); }
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   };
 
   const addNote = async () => {
@@ -436,6 +229,7 @@ const AdminDashboard = () => {
       order_id: noteDialog, admin_user_id: user!.id, note: noteText.trim(),
     });
     if (error) toast.error("Failed to add note");
+<<<<<<< HEAD
     else {
       toast.success("Note added");
       const order = orders.find(o => o.id === noteDialog);
@@ -448,6 +242,9 @@ const AdminDashboard = () => {
       setNoteDialog(null);
       setNoteText("");
     }
+=======
+    else { toast.success("Note added"); setNoteDialog(null); setNoteText(""); }
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   };
 
   const updateShipment = async () => {
@@ -461,90 +258,43 @@ const AdminDashboard = () => {
     else { toast.success("Shipment updated"); setShipmentDialog(null); fetchAll(); }
   };
 
-  const openPaymentDialog = (order: any) => {
-    setPaymentDialog(order.id);
-    const defaultMsg = `Hello ${order.buyer_name},\n\nThank you for your order focusing on ${order.fabric_name}. To proceed, we request an advance payment of ₹5000.\n\nBank Details:\nBank: Your Bank Name\nA/c No: 1234567890\nIFSC: BANK0001234\n\nYou can also pay via this link:`;
-    setPaymentForm({
-      payment_link: order.payment_link || "https://payment.example.com",
-      payment_message: order.payment_message || defaultMsg
-    });
-  };
-
-  const sendPaymentRequest = async () => {
-    if (!paymentDialog) return;
-    const order = orders.find(o => o.id === paymentDialog);
-    if (!order) return;
-
-    const { error } = await supabase.from("orders").update({
-      payment_link: paymentForm.payment_link,
-      payment_message: paymentForm.payment_message,
-    }).eq("id", paymentDialog);
-
-    if (error) {
-      toast.error("Failed to save payment info");
-      return;
-    }
-
-    const fullMsg = `${paymentForm.payment_message} ${paymentForm.payment_link}`;
-    let cleanPhone = order.phone.replace(/\D/g, '');
-    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-    if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
-
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(fullMsg)}`;
-    window.open(whatsappUrl, '_blank');
-
-    toast.success("Payment request generated and WhatsApp opened");
-    setPaymentDialog(null);
-    fetchAll();
-  };
-
-  const submitDesignResponse = async () => {
-    if (!designResponseDialog) return;
-    const { error } = await supabase
-      .from("design_requests" as any)
-      .update({
-        ...designResponseForm,
-        status: "Responded",
-        buyer_response: null, // Reset so buyer can accept/counter again
-        counter_price: null, // Clear the countered price since we're responding to it
-        updated_at: new Date().toISOString()
-      } as any)
-      .eq("id", designResponseDialog);
-
-    if (error) {
-      toast.error("Failed to send response");
-    } else {
-      toast.success("Response sent to buyer");
-      setDesignResponseDialog(null);
-      fetchAll();
-    }
-  };
-
+<<<<<<< HEAD
   const openFabricForm = async (fabric?: Fabric) => {
     setImageFiles([]);
     setImagesToDelete([]);
+=======
+  const openFabricForm = (fabric?: Fabric) => {
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
     if (fabric) {
       setEditingFabric(fabric);
       setFabricForm({
-        name: fabric.name, type: fabric.type, description: fabric.description,
-        colors: fabric.colors || "",
+        name: fabric.name, type: fabric.type, description: fabric.description, colors: fabric.colors,
         min_order: fabric.min_order, price_per_meter: Number(fabric.price_per_meter), unit: fabric.unit,
-        available: fabric.available, is_featured: fabric.is_featured || false, apc_available: (fabric as any).apc_available || false, image_url: fabric.image_url || "",
-        gm: fabric.gm?.toString() || "", weave: fabric.weave || "", width: fabric.width || "",
-        composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "", category: Array.isArray(fabric.category) ? fabric.category.join(", ") : (fabric.category || ""),
+        available: fabric.available, image_url: fabric.image_url || "",
+        gsm: fabric.gsm?.toString() || "", weave: fabric.weave || "", width: fabric.width || "",
+<<<<<<< HEAD
+        composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "", category: fabric.category || "",
       });
       // Fetch existing images
       const { data } = await supabase.from("fabric_images").select("*").eq("fabric_id", fabric.id).order("sort_order");
       setExistingImages(data || []);
     } else {
       setEditingFabric(null);
-      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, is_featured: false, apc_available: false, image_url: "", gm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "" });
+      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "", category: "" });
       setExistingImages([]);
+=======
+        composition: fabric.composition || "", finish: fabric.finish || "", shrinkage: fabric.shrinkage || "",
+      });
+    } else {
+      setEditingFabric(null);
+      setFabricForm({ name: "", type: "", description: "", colors: "", min_order: 100, price_per_meter: 0, unit: "meters", available: true, image_url: "", gsm: "", weave: "", width: "", composition: "", finish: "", shrinkage: "" });
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
     }
     setFabricDialog(true);
   };
 
   const saveFabric = async () => {
+<<<<<<< HEAD
     if (imageFiles.length > 5 || (existingImages.length - imagesToDelete.length + imageFiles.length) > 5) {
       toast.error("You can only have up to 5 images per fabric");
       return;
@@ -556,9 +306,8 @@ const AdminDashboard = () => {
     const payload = {
       name: fabricForm.name, type: fabricForm.type, description: fabricForm.description,
       colors: fabricForm.colors, min_order: fabricForm.min_order, price_per_meter: fabricForm.price_per_meter,
-      unit: fabricForm.unit, available: fabricForm.available, is_featured: fabricForm.is_featured,
-      apc_available: fabricForm.apc_available, image_url: mainImageUrl || null,
-      gm: fabricForm.gm ? parseInt(fabricForm.gm) : null, weave: fabricForm.weave || null,
+      unit: fabricForm.unit, available: fabricForm.available, image_url: mainImageUrl || null,
+      gsm: fabricForm.gsm ? parseInt(fabricForm.gsm) : null, weave: fabricForm.weave || null,
       width: fabricForm.width || null, composition: fabricForm.composition || null,
       finish: fabricForm.finish || null, shrinkage: fabricForm.shrinkage || null, category: fabricForm.category || null,
     };
@@ -624,55 +373,24 @@ const AdminDashboard = () => {
     setFabricDialog(false);
     fetchAll();
     setIsUploading(false);
-  };
-
-  const openSamplePackForm = (pack?: any) => {
-    if (pack) {
-      setEditingSamplePack(pack);
-      setSamplePackForm({
-        name: pack.name,
-        pack_type: pack.pack_type,
-        category: pack.category || "",
-        max_items: pack.max_items || 5,
-        fabric_ids: pack.fabric_ids || [],
-        price: Number(pack.price),
-        active: pack.active
-      });
+=======
+    const payload = {
+      name: fabricForm.name, type: fabricForm.type, description: fabricForm.description,
+      colors: fabricForm.colors, min_order: fabricForm.min_order, price_per_meter: fabricForm.price_per_meter,
+      unit: fabricForm.unit, available: fabricForm.available, image_url: fabricForm.image_url || null,
+      gsm: fabricForm.gsm ? parseInt(fabricForm.gsm) : null, weave: fabricForm.weave || null,
+      width: fabricForm.width || null, composition: fabricForm.composition || null,
+      finish: fabricForm.finish || null, shrinkage: fabricForm.shrinkage || null,
+    };
+    let error;
+    if (editingFabric) {
+      ({ error } = await supabase.from("fabrics").update(payload).eq("id", editingFabric.id));
     } else {
-      setEditingSamplePack(null);
-      setSamplePackForm({ name: "", pack_type: "category", category: "", max_items: 5, fabric_ids: [], price: 0, active: true });
+      ({ error } = await supabase.from("fabrics").insert(payload));
     }
-    setSamplePackDialog(true);
-  };
-
-  const saveSamplePack = async () => {
-    if (!samplePackForm.name) { toast.error("Name is required"); return; }
-
-    // Convert fabric_ids to postgres-style array string if needed, 
-    // but supabase-js handles js arrays for UUID[] automatically.
-    const payload = { ...samplePackForm };
-    let res;
-    if (editingSamplePack) {
-      res = await supabase.from("sample_packs").update(payload).eq("id", editingSamplePack.id);
-    } else {
-      res = await supabase.from("sample_packs").insert(payload);
-    }
-
-    if (res.error) {
-      console.error("Save error:", res.error);
-      toast.error(`Failed to save: ${res.error.message}`);
-    } else {
-      toast.success(editingSamplePack ? "Pack updated" : "Pack created");
-      setSamplePackDialog(false);
-      fetchAll();
-    }
-  };
-
-  const deleteSamplePack = async (id: string) => {
-    if (!confirm("Are you sure?")) return;
-    const { error } = await supabase.from("sample_packs").delete().eq("id", id);
-    if (error) toast.error("Failed to delete pack");
-    else { toast.success("Pack deleted"); fetchAll(); }
+    if (error) toast.error("Failed to save fabric");
+    else { toast.success(editingFabric ? "Fabric updated" : "Fabric added"); setFabricDialog(false); fetchAll(); }
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   };
 
   const deleteFabric = async (id: string) => {
@@ -689,666 +407,208 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f6]">
+    <div className="min-h-screen">
       <Navbar />
-      {/* Premium Header Banner */}
-      <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-16 text-white shadow-premium relative overflow-hidden mb-12">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-white/5 skew-x-[-20deg] translate-x-1/2" />
-        <div className="container mx-auto px-6 relative">
-          <div className="flex flex-col gap-3">
-            <h1 className="font-display text-5xl font-black tracking-tight uppercase">Admin Command Center</h1>
-            <p className="max-w-2xl text-primary-foreground/90 font-medium text-lg italic">Control your boutique ecosystem with surgical precision.</p>
-          </div>
-        </div>
-      </div>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="font-display text-3xl font-bold">Admin Dashboard</h1>
 
-      <div className="container mx-auto px-6 pb-24">
-
-        {/* Premium Stats Cards */}
-        <div className="grid gap-6 sm:grid-cols-4">
-          <div className="card-premium p-8 transition-premium hover:-translate-y-2 group bg-white/60">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-premium group-hover:bg-primary group-hover:text-white shadow-soft">
-              <ClipboardList className="h-7 w-7" />
-            </div>
-            <p className="mt-6 text-4xl font-black tracking-tighter text-foreground">{stats.totalOrders}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Lifetime Orders</p>
+        {/* Analytics */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-4">
+          <div className="rounded-xl border bg-card p-6 text-center">
+            <ClipboardList className="mx-auto h-8 w-8 text-primary" />
+            <p className="mt-2 text-2xl font-bold">{stats.totalOrders}</p>
+            <p className="text-sm text-muted-foreground">Total Orders</p>
           </div>
-          <div className="card-premium p-8 transition-premium hover:-translate-y-2 group bg-white/60">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-success/10 text-success transition-premium group-hover:bg-success group-hover:text-white shadow-soft">
-              <TrendingUp className="h-7 w-7" />
-            </div>
-            <p className="mt-6 text-4xl font-black tracking-tighter text-foreground">{stats.monthlyOrders}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Active This Month</p>
+          <div className="rounded-xl border bg-card p-6 text-center">
+            <TrendingUp className="mx-auto h-8 w-8 text-success" />
+            <p className="mt-2 text-2xl font-bold">{stats.monthlyOrders}</p>
+            <p className="text-sm text-muted-foreground">This Month</p>
           </div>
-          <div className="card-premium p-8 transition-premium hover:-translate-y-2 group bg-white/60">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/10 text-secondary transition-premium group-hover:bg-secondary group-hover:text-white shadow-soft">
-              <BarChart3 className="h-7 w-7" />
-            </div>
-            <p className="mt-6 text-4xl font-black tracking-tighter text-foreground">₹{stats.revenue.toLocaleString("en-IN")}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Gross Revenue</p>
+          <div className="rounded-xl border bg-card p-6 text-center">
+            <BarChart3 className="mx-auto h-8 w-8 text-secondary" />
+            <p className="mt-2 text-2xl font-bold">₹{stats.revenue.toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">Total Revenue</p>
           </div>
-          <div className="card-premium p-8 transition-premium hover:-translate-y-2 group bg-white/60">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-premium group-hover:bg-primary group-hover:text-white shadow-soft">
-              <Package className="h-7 w-7" />
-            </div>
-            <p className="mt-6 text-4xl font-black tracking-tighter text-foreground">{fabrics.length}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Stock Varieties</p>
+          <div className="rounded-xl border bg-card p-6 text-center">
+            <Package className="mx-auto h-8 w-8 text-primary" />
+            <p className="mt-2 text-2xl font-bold">{fabrics.length}</p>
+            <p className="text-sm text-muted-foreground">Fabrics</p>
           </div>
         </div>
 
-        <Tabs defaultValue="orders" className="mt-12">
-          <div className="mb-8 overflow-hidden rounded-2xl border bg-white/50 p-1.5 shadow-soft backdrop-blur-sm">
-            <TabsList className="grid w-full grid-cols-8 gap-1 bg-transparent border-none p-0">
-              <TabsTrigger value="orders" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Orders</TabsTrigger>
-              <TabsTrigger value="apc" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium text-xs">
-                APC {orders.filter(o => o.apc_details?.is_apc && o.status === 'Pending').length > 0 && <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] text-white animate-pulse">{orders.filter(o => o.apc_details?.is_apc && o.status === 'Pending').length}</span>}
-              </TabsTrigger>
-              <TabsTrigger value="design" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Design</TabsTrigger>
-              <TabsTrigger value="fabrics" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Fabrics</TabsTrigger>
-              <TabsTrigger value="quotes" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Quotes</TabsTrigger>
-              <TabsTrigger value="samples" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium text-xs">
-                Samples {sampleRequests.filter(s => s.status === 'Pending').length > 0 && <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground border border-white/20">{sampleRequests.filter(s => s.status === 'Pending').length}</span>}
-              </TabsTrigger>
-              <TabsTrigger value="colors" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Libraries</TabsTrigger>
-              <TabsTrigger value="roles" className="rounded-xl py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-premium transition-premium">Users</TabsTrigger>
-            </TabsList>
-          </div>
+        <Tabs defaultValue="orders" className="mt-8">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="fabrics">Fabrics</TabsTrigger>
+            <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+<<<<<<< HEAD
+            <TabsTrigger value="roles">Users</TabsTrigger>
+=======
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
+          </TabsList>
 
           {/* ORDERS TAB */}
           <TabsContent value="orders" className="mt-6">
-            <div className="grid gap-4">
-              {orders.filter(o => !o.apc_details?.is_apc).map((order) => (
-                <div key={order.id} className="card-premium p-6 group transition-premium">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="relative">
-                        {order.fabrics?.image_url ? (
-                          <img src={order.fabrics.image_url} alt="" className="h-14 w-14 rounded-xl object-cover shadow-soft" />
-                        ) : (
-                          <div className="h-14 w-14 rounded-xl bg-primary/5 flex items-center justify-center text-primary/40">
-                            <Package className="h-8 w-8" />
-                          </div>
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div key={order.id} className="rounded-xl border bg-card p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-3">
+<<<<<<< HEAD
+                        {order.fabrics?.image_url && (
+                          <img src={order.fabrics.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
                         )}
-                        <Badge variant="outline" className={`absolute -top-2 -right-2 font-black text-[9px] uppercase tracking-widest border-none px-2 h-5 rounded-md shadow-premium ${statusColors[order.status] || ""}`}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                      <div>
-                        <h3 className="font-black text-lg uppercase tracking-tight text-foreground group-hover:text-primary transition-colors">{order.fabric_name}</h3>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          {order.buyer_name} · <span className="text-foreground/60">{new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                        </p>
-                        <div className="mt-2 flex items-center gap-3">
-                          <span className="text-sm font-black text-foreground">{order.quantity}m</span>
-                          <span className="h-1 w-1 rounded-full bg-black/10" />
-                          <span className="text-base font-black text-primary">₹{Number(order.total || 0).toLocaleString("en-IN")}</span>
-                          {order.items && Array.isArray(order.items) && order.items.length > 0 && (
-                            <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-tighter h-5 px-1.5 rounded-md bg-primary/5 text-primary border-none">
-                              {order.items.length} shades
-                            </Badge>
-                          )}
+                        <div>
+                          <h3 className="font-display text-lg font-semibold">{order.fabric_name}</h3>
+                          <Badge variant="outline" className={statusColors[order.status] || ""}>{order.status}</Badge>
                         </div>
+=======
+                        <h3 className="font-display text-lg font-semibold">{order.fabric_name}</h3>
+                        <Badge variant="outline" className={statusColors[order.status] || ""}>{order.status}</Badge>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                       </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {order.buyer_name} · {order.company_name} · {new Date(order.created_at).toLocaleDateString("en-IN")}
+                      </p>
+<<<<<<< HEAD
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{order.quantity}m</span>
+                        <span>·</span>
+                        <span>₹{Number(order.total).toLocaleString("en-IN")}</span>
+                        {order.items && Array.isArray(order.items) && order.items.length > 0 && (
+                          <>
+                            <span>·</span>
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1">{order.items.length} colors</Badge>
+                          </>
+                        )}
+                      </div>
+=======
+                      <p className="text-sm text-muted-foreground">{order.quantity}m · ₹{Number(order.total).toLocaleString("en-IN")}</p>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 border-t sm:border-t-0 pt-4 sm:pt-0 border-black/5">
+                    <div className="flex flex-wrap gap-2">
                       <Select defaultValue={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                        <SelectTrigger className="w-[190px] h-10 rounded-xl font-bold bg-muted/20 border-none transition-premium hover:bg-muted/40 shadow-soft">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-none shadow-premium font-bold">
-                          {statusSteps.map((s) => (
-                            <SelectItem key={s} value={s} className="rounded-lg transition-colors focus:bg-primary/10">
-                              {s}
-                            </SelectItem>
-                          ))}
+                        <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {statusSteps.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold gap-2 px-4 shadow-soft hover:shadow-premium transition-premium" onClick={() => { setViewingOrder(order); setOrderDetailDialog(true); }}>
-                        <ClipboardList className="h-4 w-4" /> Details
+                      <Button variant="outline" size="sm" onClick={() => { setNoteDialog(order.id); setNoteText(""); }}>
+                        <MessageSquare className="mr-1 h-3 w-3" /> Note
                       </Button>
-                      <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold px-4 shadow-soft hover:shadow-premium transition-premium" onClick={() => { setNoteDialog(order.id); setNoteText(""); }}>
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold px-4 shadow-soft hover:shadow-premium transition-premium text-success hover:bg-success/5" onClick={() => openPaymentDialog(order)}>
-                        <CreditCard className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold px-4 shadow-soft hover:shadow-premium transition-premium" onClick={() => {
+                      <Button variant="outline" size="sm" onClick={() => {
                         setShipmentDialog(order.id);
                         setShipmentForm({ courier_name: order.courier_name || "", tracking_number: order.tracking_number || "", dispatch_date: order.dispatch_date ? new Date(order.dispatch_date).toISOString().split("T")[0] : "" });
                       }}>
-                        <Truck className="h-4 w-4" />
+                        <Truck className="mr-1 h-3 w-3" /> Shipment
                       </Button>
                     </div>
                   </div>
                 </div>
               ))}
-              {orders.filter(o => !o.apc_details?.is_apc).length === 0 && (
-                <div className="section-premium py-20 text-center opacity-50">
-                  <ClipboardList className="h-16 w-16 mx-auto text-muted/30 mb-6" />
-                  <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No standard orders recorded</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* APC REQUESTS TAB */}
-          <TabsContent value="apc" className="mt-6">
-            <div className="grid gap-4">
-              {orders.filter(o => o.apc_details?.is_apc).map((order) => (
-                <div key={order.id} className="card-premium p-6 border-secondary/20 bg-secondary/[0.02] transition-premium group">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="relative">
-                        {order.fabrics?.image_url ? (
-                          <img src={order.fabrics.image_url} alt="" className="h-16 w-16 rounded-xl object-cover border-2 border-secondary/20 shadow-soft" />
-                        ) : (
-                          <div className="h-16 w-16 rounded-xl bg-secondary/5 flex items-center justify-center text-secondary/40 border-2 border-secondary/20 border-dashed">
-                            <Wand2 className="h-8 w-8" />
-                          </div>
-                        )}
-                        <Badge className="absolute -top-3 -right-3 font-black text-[9px] uppercase tracking-widest bg-secondary text-white shadow-premium px-3 py-1 rounded-full">
-                          APC Matching
-                        </Badge>
-                      </div>
-                      <div>
-                        <h3 className="font-black text-xl uppercase tracking-tight text-secondary group-hover:scale-[1.01] transition-transform origin-left">{order.fabric_name}</h3>
-                        <p className="mt-1 text-sm font-black text-muted-foreground uppercase tracking-widest">
-                          {order.buyer_name} · <span className="text-secondary/60 italic">{new Date(order.created_at).toLocaleDateString("en-IN")}</span>
-                        </p>
-                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mt-2 bg-black/5 w-fit px-3 py-1 rounded-lg">
-                          <MapPin className="h-3.5 w-3.5 text-secondary" />
-                          <span className="italic">{order.apc_details?.buyer_address?.slice(0, 50)}...</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Select defaultValue={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                        <SelectTrigger className="w-[190px] h-11 border-secondary/30 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white shadow-soft hover:shadow-premium transition-premium focus:ring-secondary">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl font-bold">
-                          {statusSteps.map((s) => (
-                            <SelectItem key={s} value={s} className="focus:bg-secondary/10">
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="secondary" size="sm" className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-soft hover:scale-[1.02] active:scale-95 transition-premium" onClick={() => { setViewingOrder(order); setOrderDetailDialog(true); }}>
-                        <ClipboardList className="mr-2 h-4 w-4" /> View Match Set
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-11 border-secondary/20 text-secondary rounded-xl font-black uppercase tracking-widest text-[10px] px-5 shadow-soft hover:bg-secondary/5 transition-premium" onClick={() => openPaymentDialog(order)}>
-                        <CreditCard className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {orders.filter(o => o.apc_details?.is_apc).length === 0 && (
-                <div className="section-premium py-20 text-center opacity-40">
-                  <Wand2 className="h-16 w-16 mx-auto text-muted/30 mb-6" />
-                  <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No APC Color Matching requests</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* DESIGN REQUESTS TAB */}
-          <TabsContent value="design" className="mt-6">
-            <div className="grid gap-5">
-              {designRequests.map((req) => (
-                <div key={req.id} className="card-premium p-6 border-primary/20 bg-primary/[0.01] transition-premium group overflow-hidden relative">
-                  <div className="absolute -top-10 -right-10 h-24 w-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
-                  <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between relative">
-                    <div className="flex gap-6">
-                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-2 border-white shadow-premium group-hover:scale-105 transition-premium relative">
-                        <img src={req.image_url} alt="Design" className="h-full w-full object-cover" />
-                        <div className="absolute top-0 left-0 w-full h-full bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-black text-xl uppercase tracking-tight text-foreground">Custom Creation</h3>
-                          <Badge variant="outline" className={`font-black text-[9px] uppercase tracking-widest border-none px-2 h-5 rounded-md shadow-soft ${statusColors[req.status] || ""}`}>{req.status}</Badge>
-                          {req.status === 'Countered' && (
-                            <Badge className="bg-secondary/10 text-secondary border-none font-black text-[10px] tracking-tight px-3 h-5">Counter: ₹{req.counter_price}/m</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm font-black text-primary uppercase tracking-widest">
-                          {req.profiles?.buyer_name || "Boutique Member"} · <span className="text-foreground tracking-tight">{req.quantity}m Target</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground line-clamp-2 font-medium italic leading-relaxed max-w-md">
-                          "{req.description || "Premium custom weave request."}"
-                        </p>
-                        <div className="pt-2 flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
-                          <Clock className="h-3 w-3" />
-                          <span>Submitted {new Date(req.created_at).toLocaleDateString("en-IN", { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3 pt-4 md:pt-0 min-w-[200px] justify-end">
-                      {(req.status === 'Pending' || req.status === 'Countered' || req.status === 'Responded') ? (
-                        <div className="flex flex-col gap-3 w-full sm:w-auto">
-                          {req.status === 'Responded' && (
-                            <div className="rounded-xl border border-primary/20 bg-background p-3 text-center shadow-soft">
-                              <p className="font-black text-primary uppercase tracking-widest text-[9px] mb-1 leading-none">Your Active Offer</p>
-                              <p className="text-xl font-black tracking-tighter">₹{req.admin_price}<span className="text-sm font-bold opacity-50">/m</span></p>
-                            </div>
-                          )}
-                          <Button size="sm" className="h-12 rounded-xl font-black uppercase tracking-widest text-[10px] px-8 shadow-premium hover:scale-[1.02] transition-premium" onClick={() => {
-                            setDesignResponseDialog(req.id);
-                            setDesignResponseForm({
-                              admin_availability: req.admin_availability || "Available",
-                              admin_program: req.admin_program || "",
-                              admin_weight: req.admin_weight || "",
-                              admin_price: req.admin_price || 0,
-                              admin_note: req.admin_note || ""
-                            });
-                          }}>
-                            {req.status === 'Countered' ? 'Analyze Counter' :
-                              req.status === 'Responded' ? 'Modify Offer' : 'Send Quotation'}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="card-premium bg-white p-4 text-xs shadow-soft min-w-[180px] border-black/5">
-                          <p className="font-black text-primary mb-3 uppercase tracking-widest text-[9px] border-b pb-2 leading-none">Decision Matrix</p>
-                          <div className="grid gap-y-2">
-                            <div className="flex justify-between items-center"><p className="text-[10px] font-black uppercase text-muted-foreground">Status</p><Badge variant="outline" className="h-5 text-[9px] font-black uppercase border-none bg-primary/5 text-primary tracking-tighter">{req.admin_availability}</Badge></div>
-                            <div className="flex justify-between items-center"><p className="text-[10px] font-black uppercase text-muted-foreground">Price</p><p className="font-black text-foreground">₹{req.admin_price}/m</p></div>
-                            {req.buyer_response && (
-                              <div className="pt-2 mt-1 border-t border-black/5 flex justify-between items-center">
-                                <p className="text-[10px] font-black uppercase text-primary">Buyer</p>
-                                <p className="font-black text-primary tracking-tight">
-                                  {req.buyer_response === 'Countered' ? `Counter ₹${req.counter_price}` : req.buyer_response}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {designRequests.length === 0 && (
-                <div className="section-premium py-20 text-center opacity-40">
-                  <LayoutGrid className="h-16 w-16 mx-auto text-muted/30 mb-6" />
-                  <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No custom design inquiries</p>
-                </div>
-              )}
+              {orders.length === 0 && <p className="text-center text-muted-foreground">No orders yet.</p>}
             </div>
           </TabsContent>
 
           {/* FABRICS TAB */}
           <TabsContent value="fabrics" className="mt-6">
-            <div className="mb-8 flex justify-between items-center bg-white p-4 rounded-2xl shadow-soft border">
-              <div>
-                <h3 className="font-black text-lg uppercase tracking-tight">Quality Master List</h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total {fabrics.length} unique varieties</p>
-              </div>
-              <Button onClick={() => openFabricForm()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-premium hover:scale-[1.02] transition-premium">
-                <Plus className="mr-2 h-5 w-5" /> New Quality
-              </Button>
+            <div className="mb-4 flex justify-end">
+              <Button onClick={() => openFabricForm()}><Plus className="mr-1 h-4 w-4" /> Add Fabric</Button>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-3">
               {fabrics.map((f) => (
-                <div key={f.id} className="card-premium p-5 group transition-premium flex flex-col justify-between hover:border-primary/40 h-full">
-                  <div>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-20 w-20 rounded-2xl overflow-hidden border bg-muted shadow-soft relative group-hover:scale-105 transition-premium">
-                        {f.image_url ? (
-                          <img src={f.image_url} alt={f.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-muted/30">
-                            <ImageIcon className="h-10 w-10" />
-                          </div>
-                        )}
-                        {f.is_featured && <div className="absolute top-0 left-0 w-full h-full border-4 border-success/40 rounded-2xl pointer-events-none" />}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/5 hover:text-primary transition-premium" onClick={() => openFabricForm(f)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/5 hover:text-destructive transition-premium" onClick={() => deleteFabric(f.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-black text-lg uppercase tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1">{f.name}</h4>
-                      {f.is_featured && <Badge className="bg-success/10 text-success border-none py-0 h-4 text-[9px] font-black uppercase tracking-tighter">Gold</Badge>}
-                    </div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">{f.type} · ₹{Number(f.price_per_meter).toLocaleString("en-IN")}/m</p>
-
-                    <div className="bg-muted/10 p-3 rounded-xl border border-dashed border-black/5 mb-4">
-                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-2 leading-none">Available Colors</p>
-                      <ColorSwatchList colors={f.colors} limit={12} size="sm" />
-                      {!f.colors && <p className="text-[9px] italic text-muted-foreground">No colors defined</p>}
+                <div key={f.id} className="flex items-center justify-between rounded-xl border bg-card p-4">
+                  <div className="flex items-center gap-4">
+                    {f.image_url && <img src={f.image_url} alt={f.name} className="h-12 w-12 rounded-lg object-cover" />}
+                    <div>
+                      <p className="font-medium">{f.name}</p>
+                      <p className="text-xs text-muted-foreground">{f.type} · ₹{Number(f.price_per_meter).toLocaleString("en-IN")}/m · {f.available ? "In Stock" : "Out of Stock"}</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-black/5 mt-auto">
-                    <Badge variant="outline" className={`h-6 text-[9px] font-black uppercase tracking-widest border-none px-3 ${f.available ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                      {f.available ? "Live" : "Archived"}
-                    </Badge>
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter leading-none">Min: <span className="text-foreground">{f.min_order}{f.unit || 'm'}</span></p>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => openFabricForm(f)}><Edit className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteFabric(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 </div>
               ))}
             </div>
-            {fabrics.length === 0 && (
-              <div className="section-premium py-24 text-center">
-                <Package className="h-20 w-20 mx-auto text-muted/20 mb-6" />
-                <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">Inventory is empty</p>
-                <Button variant="outline" className="mt-6" onClick={() => openFabricForm()}>Add First Quality</Button>
-              </div>
-            )}
           </TabsContent>
 
           {/* QUOTES TAB */}
           <TabsContent value="quotes" className="mt-6">
-            <div className="grid gap-4">
+            <div className="space-y-4">
               {quotes.map((q) => (
-                <div key={q.id} className="card-premium p-6 group transition-premium">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex gap-5">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-muted shadow-soft">
-                        {q.fabrics?.image_url ? (
-                          <img src={q.fabrics.image_url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-primary/30"><LayoutGrid className="h-8 w-8" /></div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-black text-lg uppercase tracking-tight">{q.fabric_name}</h3>
-                          <Badge variant="outline" className={`font-black text-[9px] uppercase tracking-widest border-none px-2 h-5 rounded-md shadow-soft ${statusColors[q.status] || ""}`}>{q.status}</Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          <span className="text-foreground">{q.quantity} Units</span>
-                          <span className="h-1 w-1 rounded-full bg-black/10" />
-                          <span>{new Date(q.created_at).toLocaleDateString("en-IN")}</span>
-                        </div>
-                        {q.message && (
-                          <div className="mt-2 bg-muted/20 p-3 rounded-lg border border-dashed text-xs italic text-muted-foreground leading-relaxed">
-                            "{q.message}"
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      {q.status === "Pending" && (
-                        <>
-                          <Button size="sm" className="h-10 rounded-xl font-black uppercase tracking-widest text-[10px] px-6 shadow-premium hover:scale-105 transition-premium" onClick={() => {
-                            const response = prompt("Enter response to buyer:");
-                            if (response) respondToQuote(q.id, response, "Responded");
-                          }}>Send Quote</Button>
-                          <Button size="sm" variant="ghost" className="h-10 rounded-xl font-black uppercase tracking-widest text-[10px] text-destructive hover:bg-destructive/5" onClick={() => respondToQuote(q.id, "Declined", "Declined")}>Decline</Button>
-                        </>
+                <div key={q.id} className="rounded-xl border bg-card p-5">
+                  <div className="flex items-start justify-between">
+<<<<<<< HEAD
+                    <div className="flex items-center gap-4">
+                      {q.fabrics?.image_url && (
+                        <img src={q.fabrics.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
                       )}
+                      <div>
+                        <p className="font-medium">{q.fabric_name}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{q.quantity} units</span>
+                        <span>·</span>
+                        <span>{new Date(q.created_at).toLocaleDateString("en-IN")}</span>
+                        {q.items && Array.isArray(q.items) && q.items.length > 0 && (
+                          <>
+                            <span>·</span>
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1">{q.items.length} colors</Badge>
+                          </>
+                        )}
+                      </div>
+                      {q.message && <p className="mt-2 text-sm">{q.message}</p>}
+                      </div>
+=======
+                    <div>
+                      <p className="font-medium">{q.fabric_name}</p>
+                      <p className="text-sm text-muted-foreground">{q.quantity} units · {new Date(q.created_at).toLocaleDateString("en-IN")}</p>
+                      {q.message && <p className="mt-2 text-sm">{q.message}</p>}
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                     </div>
+                    <Badge variant="outline">{q.status}</Badge>
                   </div>
+                  {q.status === "Pending" && (
+                    <div className="mt-4 flex gap-2">
+                      <Button size="sm" onClick={() => {
+                        const response = prompt("Enter response to buyer:");
+                        if (response) respondToQuote(q.id, response, "Responded");
+                      }}>Respond</Button>
+                      <Button size="sm" variant="destructive" onClick={() => respondToQuote(q.id, "Declined", "Declined")}>Decline</Button>
+                    </div>
+                  )}
                 </div>
               ))}
-              {quotes.length === 0 && (
-                <div className="section-premium py-20 text-center opacity-40">
-                  <MessageSquare className="h-16 w-16 mx-auto text-muted/30 mb-6" />
-                  <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No bulk quote requests</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* SAMPLES TAB */}
-          <TabsContent value="samples" className="mt-6">
-            <Tabs defaultValue="requests">
-              <div className="flex justify-center mb-8">
-                <TabsList className="grid w-full grid-cols-2 lg:w-[480px] bg-muted/30 p-1 rounded-2xl border">
-                  <TabsTrigger value="requests" className="rounded-xl font-black uppercase tracking-widest text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-soft">Sample Requests</TabsTrigger>
-                  <TabsTrigger value="pricing" className="rounded-xl font-black uppercase tracking-widest text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-soft">Pricing & Packs</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="requests" className="mt-0">
-                <div className="grid gap-4">
-                  {sampleRequests.map((s) => (
-                    <div key={s.id} className="card-premium p-6 group transition-premium">
-                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-5">
-                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-muted shadow-soft">
-                            {s.fabric_image ? (
-                              <img src={s.fabric_image} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-primary/30"><Scan className="h-8 w-8" /></div>
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-black text-lg uppercase tracking-tight">{s.fabric_name}</h3>
-                            <div className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
-                              <span className="text-foreground">{new Date(s.created_at).toLocaleDateString("en-IN")}</span>
-                              <span className="h-1 w-1 rounded-full bg-black/10" />
-                              {s.price && <span className="text-primary italic">₹{Number(s.price).toLocaleString("en-IN")} collected</span>}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground mt-2 bg-black/5 w-fit px-2 py-0.5 rounded-md">
-                              <MapPin className="h-3 w-3" />
-                              <span className="truncate max-w-[200px]">{s.delivery_address}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 pt-4 sm:pt-0 border-t sm:border-t-0 border-black/5">
-                          <Badge variant="outline" className={`h-8 font-black uppercase tracking-widest px-4 border-none shadow-soft ${s.status === 'Approved' ? 'bg-success/10 text-success' :
-                            s.status === 'Shipped' ? 'bg-primary/10 text-primary' :
-                              s.status === 'Rejected' ? 'bg-destructive/10 text-destructive' :
-                                'bg-warning/10 text-warning'
-                            }`}>{s.status}</Badge>
-
-                          {s.status === 'Pending' && (
-                            <div className="flex gap-2">
-                              <Button size="sm" className="h-10 rounded-xl font-black uppercase tracking-widest text-[9px] px-5 shadow-premium" onClick={async () => { await supabase.from("sample_requests").update({ status: 'Approved' }).eq('id', s.id); fetchAll(); toast.success('Sample approved'); }}>Approve</Button>
-                              <Button size="sm" variant="ghost" className="h-10 rounded-xl font-black uppercase tracking-widest text-[9px] text-destructive hover:bg-destructive/5" onClick={async () => { await supabase.from("sample_requests").update({ status: 'Rejected' }).eq('id', s.id); fetchAll(); toast.success('Sample rejected'); }}>Reject</Button>
-                            </div>
-                          )}
-                          {s.status === 'Approved' && (
-                            <Button size="sm" className="h-10 rounded-xl font-black uppercase tracking-widest text-[9px] px-6 shadow-premium" onClick={async () => { await supabase.from("sample_requests").update({ status: 'Shipped' }).eq('id', s.id); fetchAll(); toast.success('Marked as shipped'); }}>Mark Shipped</Button>
-                          )}
-                        </div>
-                      </div>
-                      {s.notes && (
-                        <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/10 text-xs italic text-muted-foreground">
-                          "Request Note: {s.notes}"
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {sampleRequests.length === 0 && (
-                    <div className="section-premium py-20 text-center opacity-40">
-                      <Scan className="h-16 w-16 mx-auto text-muted/30 mb-6" />
-                      <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No sample requests yet</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="pricing" className="mt-0">
-                <div className="mb-8 flex justify-between items-center bg-white p-4 rounded-2xl shadow-soft border">
-                  <div>
-                    <h3 className="font-black text-lg uppercase tracking-tight">Curation Hub</h3>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Manage Sample Packs & Pricing</p>
-                  </div>
-                  <Button onClick={() => openSamplePackForm()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-premium">
-                    <Plus className="mr-2 h-5 w-5" /> New Pack
-                  </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {samplePacks.map((p) => (
-                    <div key={p.id} className="card-premium p-6 group transition-premium flex flex-col justify-between hover:border-primary/40">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h4 className="font-black text-xl uppercase tracking-tight text-foreground">{p.name}</h4>
-                            {!p.active && <Badge variant="secondary" className="font-black text-[9px] uppercase h-5 bg-muted">Archived</Badge>}
-                          </div>
-                          <p className="text-xs font-black text-primary uppercase tracking-widest mt-1">₹{Number(p.price).toLocaleString("en-IN")}</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-premium" onClick={() => openSamplePackForm(p)}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-premium" onClick={() => deleteSamplePack(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </div>
-                      <div className="bg-muted/30 p-4 rounded-xl space-y-2 mb-4">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          <span>Pack Logic</span>
-                          <span className="text-foreground">{p.pack_type === 'category' ? `Full Category: ${p.category}` : `Custom Curator Set`}</span>
-                        </div>
-                        {p.pack_type === 'custom' && (
-                          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            <span>Capacity</span>
-                            <span className="text-foreground">Max {p.max_items} Fabrics</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          <span>Selections</span>
-                          <span className="text-foreground">{p.fabric_ids?.length || 0} Qualities</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 overflow-hidden">
-                        {p.fabric_ids?.slice(0, 6).map((fid, i) => {
-                          const f = fabrics.find(fb => fb.id === fid);
-                          return f?.image_url ? (
-                            <img key={i} src={f.image_url} alt="" className="h-8 w-8 rounded-lg object-cover border-2 border-white shadow-soft" />
-                          ) : (
-                            <div key={i} className="h-8 w-8 rounded-lg bg-muted border-2 border-white flex items-center justify-center text-[8px] font-bold">FA</div>
-                          );
-                        })}
-                        {(p.fabric_ids?.length || 0) > 6 && <span className="text-[10px] font-black text-muted-foreground ml-2">+{p.fabric_ids.length - 6} more</span>}
-                      </div>
-                    </div>
-                  ))}
-                  {samplePacks.length === 0 && (
-                    <div className="col-span-2 section-premium py-24 text-center">
-                      <PlusCircle className="h-20 w-20 mx-auto text-muted/20 mb-6" />
-                      <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No sample kits created</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-
-          {/* LIBRARIES TAB */}
-          <TabsContent value="colors" className="mt-6">
-            <div className="flex flex-col gap-10">
-              <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-soft border">
-                <div>
-                  <h2 className="font-black text-2xl uppercase tracking-tight">Master Color Libraries</h2>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Global reusable color configurations</p>
-                </div>
-                <Button onClick={() => openLibraryForm()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest text-xs shadow-premium">
-                  <Plus className="mr-2 h-5 w-5" /> New Library
-                </Button>
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {colorLibraries.map((lib) => (
-                  <div key={lib.id} className="card-premium p-6 group transition-premium hover:border-primary/40">
-                    <div className="flex items-start justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 text-primary shadow-soft group-hover:bg-primary group-hover:text-white transition-premium">
-                        <Wand2 className="h-7 w-7" />
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-premium" onClick={() => openLibraryForm(lib)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-premium" onClick={() => deleteLibrary(lib.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="mt-6">
-                      <h3 className="font-black text-lg uppercase tracking-tight">{lib.name}</h3>
-                      <p className="mt-1 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                        {lib.colors.split(',').filter(Boolean).length} Shades Defined
-                      </p>
-                    </div>
-                    <div className="mt-6 flex flex-wrap gap-1.5 p-3 rounded-xl bg-muted/20 border border-dashed border-black/5">
-                      {lib.colors.split(',').filter(Boolean).slice(0, 15).map((c, i) => {
-                        const parts = c.trim().split(':');
-                        return (
-                          <div key={i} className="h-5 w-5 rounded-full border-2 border-white shadow-soft" style={{ backgroundColor: parts[1] || '#ccc' }} title={parts[0]} />
-                        );
-                      })}
-                      {lib.colors.split(',').filter(Boolean).length > 15 && (
-                        <div className="h-5 w-5 flex items-center justify-center text-[8px] font-black bg-white rounded-full shadow-soft border">
-                          +{lib.colors.split(',').filter(Boolean).length - 15}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {colorLibraries.length === 0 && (
-                <div className="section-premium py-24 text-center opacity-40">
-                  <PlusCircle className="h-20 w-20 mx-auto text-muted/20 mb-6" />
-                  <p className="font-display text-xl font-bold text-muted-foreground uppercase tracking-widest">No master color libraries</p>
-                  <Button variant="outline" className="mt-8 rounded-xl font-black uppercase tracking-widest text-[10px]" onClick={() => openLibraryForm()}>Bootstrap Library</Button>
-                </div>
-              )}
+              {quotes.length === 0 && <p className="text-center text-muted-foreground">No quote requests.</p>}
             </div>
           </TabsContent>
 
           {/* ANALYTICS TAB */}
           <TabsContent value="analytics" className="mt-6">
             <div className="grid gap-8 md:grid-cols-2">
-              <div className="card-premium p-8 transition-premium group hover:border-primary/40 bg-white/60">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-soft">
-                    <TrendingUp className="h-6 w-6" />
+              <div className="rounded-xl border bg-card p-6">
+                <h3 className="font-display text-lg font-semibold mb-4">Top Fabrics</h3>
+                {stats.topFabrics.map((f, i) => (
+                  <div key={i} className="flex justify-between py-2 border-b last:border-0">
+                    <span>{f.name}</span>
+                    <span className="font-medium">{f.count} orders</span>
                   </div>
-                  <h3 className="font-black text-xl uppercase tracking-tight">Performance Qualities</h3>
-                </div>
-                <div className="space-y-4">
-                  {stats.topFabrics.map((f, i) => (
-                    <div key={i} className="flex justify-between items-center py-3 border-b border-black/5 last:border-0 group-hover:px-2 transition-all rounded-lg hover:bg-primary/5">
-                      <span className="font-bold text-foreground/80 uppercase tracking-tight text-sm">{f.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-primary">{f.count}</span>
-                        <span className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Orders</span>
-                      </div>
-                    </div>
-                  ))}
-                  {stats.topFabrics.length === 0 && (
-                    <div className="py-12 text-center text-muted-foreground opacity-40">
-                      <LayoutGrid className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Insufficient Data</p>
-                    </div>
-                  )}
-                </div>
+                ))}
+                {stats.topFabrics.length === 0 && <p className="text-muted-foreground text-sm">No data yet.</p>}
               </div>
-
-              <div className="card-premium p-8 transition-premium group hover:border-secondary/40 bg-white/60">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="h-12 w-12 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center shadow-soft">
-                    <BarChart3 className="h-6 w-6" />
+              <div className="rounded-xl border bg-card p-6">
+                <h3 className="font-display text-lg font-semibold mb-4">Top Buyers</h3>
+                {stats.topBuyers.map((b, i) => (
+                  <div key={i} className="flex justify-between py-2 border-b last:border-0">
+                    <span>{b.name}</span>
+                    <span className="font-medium">₹{b.total.toLocaleString("en-IN")}</span>
                   </div>
-                  <h3 className="font-black text-xl uppercase tracking-tight">Elite Partners</h3>
-                </div>
-                <div className="space-y-4">
-                  {stats.topBuyers.map((b, i) => (
-                    <div key={i} className="flex justify-between items-center py-3 border-b border-black/5 last:border-0 group-hover:px-2 transition-all rounded-lg hover:bg-secondary/5">
-                      <span className="font-bold text-foreground/80 uppercase tracking-tight text-sm">{b.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-secondary">₹{b.total.toLocaleString("en-IN")}</span>
-                        <span className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Yield</span>
-                      </div>
-                    </div>
-                  ))}
-                  {stats.topBuyers.length === 0 && (
-                    <div className="py-12 text-center text-muted-foreground opacity-40">
-                      <CreditCard className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Zero Transactional History</p>
-                    </div>
-                  )}
-                </div>
+                ))}
+                {stats.topBuyers.length === 0 && <p className="text-muted-foreground text-sm">No data yet.</p>}
               </div>
             </div>
           </TabsContent>
@@ -1364,7 +624,7 @@ const AdminDashboard = () => {
       <Dialog open={!!noteDialog} onOpenChange={(v) => !v && setNoteDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Order Note</DialogTitle></DialogHeader>
-          <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Dispatch update, shipping info..." rows={4} />
+          <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Production update, shipping info..." rows={4} />
           <Button onClick={addNote} disabled={!noteText.trim()}>Add Note</Button>
         </DialogContent>
       </Dialog>
@@ -1374,7 +634,11 @@ const AdminDashboard = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>Update Shipment</DialogTitle></DialogHeader>
           <div className="space-y-4">
+<<<<<<< HEAD
             <div><Label>Transport Name</Label><Input value={shipmentForm.courier_name} onChange={(e) => setShipmentForm((p) => ({ ...p, courier_name: e.target.value }))} className="mt-1.5" /></div>
+=======
+            <div><Label>Courier Name</Label><Input value={shipmentForm.courier_name} onChange={(e) => setShipmentForm((p) => ({ ...p, courier_name: e.target.value }))} className="mt-1.5" /></div>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
             <div><Label>Tracking Number</Label><Input value={shipmentForm.tracking_number} onChange={(e) => setShipmentForm((p) => ({ ...p, tracking_number: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Dispatch Date</Label><Input type="date" value={shipmentForm.dispatch_date} onChange={(e) => setShipmentForm((p) => ({ ...p, dispatch_date: e.target.value }))} className="mt-1.5" /></div>
             <Button onClick={updateShipment}>Save</Button>
@@ -1382,191 +646,41 @@ const AdminDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Request Dialog */}
-      <Dialog open={!!paymentDialog} onOpenChange={(v) => !v && setPaymentDialog(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>WhatsApp Payment Request</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="rounded-xl bg-primary/5 p-4 text-xs text-primary font-bold border border-primary/10">
-              This will generate a WhatsApp message to the buyer requesting a ₹5000 advance.
-            </div>
-            <div>
-              <Label>Bank Details / Message</Label>
-              <Textarea
-                value={paymentForm.payment_message}
-                onChange={(e) => setPaymentForm(p => ({ ...p, payment_message: e.target.value }))}
-                className="mt-1.5 h-40 text-sm"
-              />
-            </div>
-            <div>
-              <Label>Payment Link</Label>
-              <Input
-                value={paymentForm.payment_link}
-                onChange={(e) => setPaymentForm(p => ({ ...p, payment_link: e.target.value }))}
-                className="mt-1.5"
-                placeholder="https://pay.example.com/..."
-              />
-            </div>
-            <Button onClick={sendPaymentRequest} className="w-full h-12 rounded-xl font-black uppercase tracking-widest shadow-premium">
-              <MessageSquare className="mr-2 h-5 w-5" /> Open WhatsApp
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Sample Pack Dialog */}
-      <Dialog open={samplePackDialog} onOpenChange={setSamplePackDialog}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingSamplePack ? "Edit Sample Pack" : "Create Sample Pack"}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label>Pack Name *</Label>
-              <Input value={samplePackForm.name} onChange={(e) => setSamplePackForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Cotton Basics Set" className="mt-1.5" />
-            </div>
-            <div>
-              <Label>Pack Type</Label>
-              <Select value={samplePackForm.pack_type} onValueChange={(v) => setSamplePackForm(p => ({ ...p, pack_type: v }))}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="category">Full Category</SelectItem>
-                  <SelectItem value="custom">Custom Quality Set</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {samplePackForm.pack_type === 'category' ? (
-              <div>
-                <Label>Category</Label>
-                <Select value={samplePackForm.category} onValueChange={(v) => setSamplePackForm(p => ({ ...p, category: v }))}>
-                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>
-                    {["Cotton", "Polyester", "Uniform", "Linen", "Silk", "Other"].map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div>
-                <Label>Max Fabrics in Set</Label>
-                <Input type="number"
-                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                  value={samplePackForm.max_items}
-                  onChange={(e) => setSamplePackForm(p => ({ ...p, max_items: Number(e.target.value) }))}
-                  className="mt-1.5"
-                />
-              </div>
-            )}
-            <div>
-              <Label>Price (₹) *</Label>
-              <Input type="number"
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                value={samplePackForm.price}
-                onChange={(e) => setSamplePackForm(p => ({ ...p, price: Number(e.target.value) }))}
-                className="mt-1.5"
-              />
-            </div>
-
-            <div>
-              <Label>Included Fabrics (Qualities)</Label>
-              <div className="mt-2 rounded-lg border p-3 max-h-[300px] overflow-y-auto space-y-2">
-                {fabrics.map((fabric) => (
-                  <div key={fabric.id} className="flex items-center gap-2 px-1 hover:bg-muted/50 rounded transition-colors py-1">
-                    <input
-                      type="checkbox"
-                      id={`fabric-${fabric.id}`}
-                      checked={samplePackForm.fabric_ids.includes(fabric.id)}
-                      onChange={(e) => {
-                        const ids = e.target.checked
-                          ? [...samplePackForm.fabric_ids, fabric.id]
-                          : samplePackForm.fabric_ids.filter(id => id !== fabric.id);
-                        setSamplePackForm(p => ({ ...p, fabric_ids: ids }));
-                      }}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label htmlFor={`fabric-${fabric.id}`} className="text-sm font-normal cursor-pointer flex-1 flex justify-between">
-                      <span>{fabric.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{fabric.category}</span>
-                    </Label>
-                  </div>
-                ))}
-                {fabrics.length === 0 && <p className="text-xs text-muted-foreground italic text-center py-4">No fabrics available</p>}
-              </div>
-              <p className="mt-1.5 text-[10px] text-muted-foreground">{samplePackForm.fabric_ids.length} fabrics selected for this pack</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={samplePackForm.active} onChange={(e) => setSamplePackForm(p => ({ ...p, active: e.target.checked }))} id="pack-active" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-              <Label htmlFor="pack-active" className="font-medium">Active (Visible to Buyers)</Label>
-            </div>
-          </div>
-          <Button onClick={saveSamplePack}>{editingSamplePack ? "Update" : "Create"} Pack</Button>
-        </DialogContent>
-      </Dialog>
+      {/* Fabric Dialog */}
       <Dialog open={fabricDialog} onOpenChange={setFabricDialog}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>{editingFabric ? "Edit Fabric" : "Add Fabric"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><Label>Name *</Label><Input value={fabricForm.name} onChange={(e) => setFabricForm((p) => ({ ...p, name: e.target.value }))} className="mt-1.5" /></div>
+<<<<<<< HEAD
             <div className="sm:col-span-2"><Label>Description</Label><Textarea value={fabricForm.description} onChange={(e) => setFabricForm((p) => ({ ...p, description: e.target.value }))} className="mt-1.5" /></div>
             <div>
-              <Label>Categories *</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {["Cotton", "Polyester", "Uniform", "Linen", "Silk", "Other"].map(cat => {
-                  const currentCats = fabricForm.category ? fabricForm.category.split(',').map(c => c.trim()).filter(Boolean) : [];
-                  const isSelected = currentCats.includes(cat);
-                  return (
-                    <Badge
-                      key={cat}
-                      variant={isSelected ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        let next;
-                        if (isSelected) {
-                          next = currentCats.filter(c => c !== cat);
-                        } else {
-                          next = [...currentCats, cat];
-                        }
-                        setFabricForm(p => ({ ...p, category: next.join(', ') }));
-                      }}
-                    >
-                      {cat}
-                    </Badge>
-                  );
-                })}
-              </div>
+              <Label>Category *</Label>
+              <Select value={fabricForm.category} onValueChange={(v) => setFabricForm((p) => ({ ...p, category: v }))}>
+                <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cotton">Cotton</SelectItem>
+                  <SelectItem value="Polyester">Polyester</SelectItem>
+                  <SelectItem value="Uniform">Uniform</SelectItem>
+                  <SelectItem value="Linen">Linen</SelectItem>
+                  <SelectItem value="Silk">Silk</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div><Label>Type *</Label><Input value={fabricForm.type} onChange={(e) => setFabricForm((p) => ({ ...p, type: e.target.value }))} className="mt-1.5" /></div>
             <div>
-              <Label className="flex justify-between items-center">
-                <span>Colors</span>
-                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-primary" onClick={() => setColorManagerOpen(true)}>
-                  <Settings className="mr-1 h-3 w-3" /> Advanced Manager
-                </Button>
-              </Label>
-              <div className="mt-1.5 flex flex-col gap-2">
-                <Input
-                  value={fabricForm.colors}
-                  onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))}
-                  placeholder="Red:#FF0000, Blue:#0000FF"
-                  className="font-mono text-xs"
-                />
-                {fabricForm.colors && (
-                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto p-2 bg-muted/30 rounded-md border border-dashed">
-                    {fabricForm.colors.split(',').filter(s => s.trim()).map((c, i) => {
-                      const [name, hex] = c.trim().split(':');
-                      return (
-                        <div key={i} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background border text-[10px] font-medium">
-                          <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: hex || '#ccc' }} />
-                          {name}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <Label>Colors</Label>
+              <Input 
+                value={fabricForm.colors} 
+                onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))} 
+                className="mt-1.5" 
+                placeholder="Red:#FF0000, Blue:#0000FF"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Format: Name:HexCode, ... (e.g. Red:#FF0000)</p>
             </div>
-            <div><Label>Price/Meter (₹)</Label><Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} value={fabricForm.price_per_meter} onChange={(e) => setFabricForm((p) => ({ ...p, price_per_meter: Number(e.target.value) }))} className="mt-1.5" /></div>
-            <div><Label>Min Order</Label><Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} value={fabricForm.min_order} onChange={(e) => setFabricForm((p) => ({ ...p, min_order: Number(e.target.value) }))} className="mt-1.5" /></div>
+            <div><Label>Price/Meter (₹)</Label><Input type="number" value={fabricForm.price_per_meter} onChange={(e) => setFabricForm((p) => ({ ...p, price_per_meter: Number(e.target.value) }))} className="mt-1.5" /></div>
+            <div><Label>Min Order</Label><Input type="number" value={fabricForm.min_order} onChange={(e) => setFabricForm((p) => ({ ...p, min_order: Number(e.target.value) }))} className="mt-1.5" /></div>
             <div><Label>Unit</Label><Input value={fabricForm.unit} onChange={(e) => setFabricForm((p) => ({ ...p, unit: e.target.value }))} className="mt-1.5" /></div>
             <div className="sm:col-span-2">
               <Label>Images (Up to 5)</Label>
@@ -1627,440 +741,196 @@ const AdminDashboard = () => {
                 </div>
               )}
             </div>
+=======
+            <div><Label>Type *</Label><Input value={fabricForm.type} onChange={(e) => setFabricForm((p) => ({ ...p, type: e.target.value }))} className="mt-1.5" /></div>
+            <div className="sm:col-span-2"><Label>Description</Label><Textarea value={fabricForm.description} onChange={(e) => setFabricForm((p) => ({ ...p, description: e.target.value }))} className="mt-1.5" /></div>
+            <div><Label>Colors</Label><Input value={fabricForm.colors} onChange={(e) => setFabricForm((p) => ({ ...p, colors: e.target.value }))} className="mt-1.5" /></div>
+            <div><Label>Price/Meter (₹)</Label><Input type="number" value={fabricForm.price_per_meter} onChange={(e) => setFabricForm((p) => ({ ...p, price_per_meter: Number(e.target.value) }))} className="mt-1.5" /></div>
+            <div><Label>Min Order</Label><Input type="number" value={fabricForm.min_order} onChange={(e) => setFabricForm((p) => ({ ...p, min_order: Number(e.target.value) }))} className="mt-1.5" /></div>
+            <div><Label>Unit</Label><Input value={fabricForm.unit} onChange={(e) => setFabricForm((p) => ({ ...p, unit: e.target.value }))} className="mt-1.5" /></div>
+            <div><Label>Image URL</Label><Input value={fabricForm.image_url} onChange={(e) => setFabricForm((p) => ({ ...p, image_url: e.target.value }))} className="mt-1.5" /></div>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
             <div className="flex items-center gap-2">
-              <input type="checkbox" checked={fabricForm.available} onChange={(e) => setFabricForm((p) => ({ ...p, available: e.target.checked }))} id="avail" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+              <input type="checkbox" checked={fabricForm.available} onChange={(e) => setFabricForm((p) => ({ ...p, available: e.target.checked }))} id="avail" />
               <Label htmlFor="avail">Available</Label>
             </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={fabricForm.is_featured} onChange={(e) => setFabricForm((p) => ({ ...p, is_featured: e.target.checked }))} id="featured" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-              <Label htmlFor="featured" className="font-semibold text-primary">Show on Landing Page (Featured)</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={fabricForm.apc_available} onChange={(e) => setFabricForm((p) => ({ ...p, apc_available: e.target.checked }))} id="apc" className="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary" />
-              <Label htmlFor="apc" className="font-semibold text-secondary">APC Compatible (As Per Cutting)</Label>
-            </div>
             <div className="sm:col-span-2 border-t pt-4"><h3 className="font-semibold mb-2">Specifications</h3></div>
-            <div><Label>GM</Label><Input value={fabricForm.gm} onChange={(e) => setFabricForm((p) => ({ ...p, gm: e.target.value }))} className="mt-1.5" /></div>
+            <div><Label>GSM</Label><Input value={fabricForm.gsm} onChange={(e) => setFabricForm((p) => ({ ...p, gsm: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Weave</Label><Input value={fabricForm.weave} onChange={(e) => setFabricForm((p) => ({ ...p, weave: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Width</Label><Input value={fabricForm.width} onChange={(e) => setFabricForm((p) => ({ ...p, width: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Composition</Label><Input value={fabricForm.composition} onChange={(e) => setFabricForm((p) => ({ ...p, composition: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Finish</Label><Input value={fabricForm.finish} onChange={(e) => setFabricForm((p) => ({ ...p, finish: e.target.value }))} className="mt-1.5" /></div>
             <div><Label>Shrinkage</Label><Input value={fabricForm.shrinkage} onChange={(e) => setFabricForm((p) => ({ ...p, shrinkage: e.target.value }))} className="mt-1.5" /></div>
           </div>
-          <Button onClick={saveFabric} className="w-full" disabled={isUploading}>
-            {isUploading ? "Saving..." : (editingFabric ? "Update Fabric" : "Add Fabric")}
+<<<<<<< HEAD
+          <Button onClick={saveFabric} className="mt-4" disabled={isUploading}>
+            {isUploading ? "Saving..." : (editingFabric ? "Update" : "Add")} Fabric
           </Button>
+=======
+          <Button onClick={saveFabric} className="mt-4">{editingFabric ? "Update" : "Add"} Fabric</Button>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
         </DialogContent>
       </Dialog>
 
-      {/* Order Detail Dialog */}
-      <Dialog open={orderDetailDialog} onOpenChange={setOrderDetailDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              Order Details: {viewingOrder?.fabric_name}
-              {viewingOrder && (
-                <Badge className={statusColors[viewingOrder.status]}>{viewingOrder.status}</Badge>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-
-          {viewingOrder && (
-            <div className="space-y-6 py-4">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Fabric Info</h4>
-                    <div className="flex gap-4 items-center rounded-xl border bg-muted/30 p-3">
-                      {viewingOrder.fabrics?.image_url && (
-                        <img src={viewingOrder.fabrics.image_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
-                      )}
-                      <div>
-                        <p className="font-bold">{viewingOrder.fabric_name}</p>
-                        <p className="text-sm text-muted-foreground">{viewingOrder.fabrics?.type || 'Fabric Quality'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Buyer Information</h4>
-                    <div className="space-y-1.5 rounded-xl border p-4 text-sm">
-                      <p><span className="text-muted-foreground">Name:</span> <span className="font-bold">{viewingOrder.buyer_name}</span></p>
-                      {viewingOrder.billing_name && <p><span className="text-muted-foreground">Billing:</span> <span className="font-bold">{viewingOrder.billing_name}</span></p>}
-                      <p><span className="text-muted-foreground">Phone:</span> <span className="font-bold">{viewingOrder.phone}</span></p>
-                      <p><span className="text-muted-foreground">Email:</span> <span className="font-bold underline">{viewingOrder.email}</span></p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Delivery Address</h4>
-                    <div className="rounded-xl border p-4 text-sm leading-relaxed">
-                      {viewingOrder.delivery_address}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Items Breakdown</h4>
-                    <div className="space-y-2">
-                      {viewingOrder.items && Array.isArray(viewingOrder.items) && viewingOrder.items.length > 0 ? (
-                        viewingOrder.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                            <span className="font-medium">
-                              {item.color === "Not Specified" ? (viewingOrder.apc_details?.target_color || "Not Specified") : item.color}
-                              ({item.quantityType})
-                            </span>
-                            <span className="font-bold">{item.quantity} {viewingOrder.fabrics?.unit || 'meters'}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex justify-between items-center rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                          <span className="font-medium">
-                            {(viewingOrder.selected_color === "Not Specified" || !viewingOrder.selected_color)
-                              ? (viewingOrder.apc_details?.target_color || 'Standard')
-                              : viewingOrder.selected_color}
-                            ({viewingOrder.quantity_type || 'Lump'})
-                          </span>
-                          <span className="font-bold">{viewingOrder.quantity} {viewingOrder.fabrics?.unit || 'meters'}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-primary/5 p-4 border border-primary/10">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-xs font-bold text-primary uppercase tracking-widest">Total Order Value</p>
-                    <p className="text-3xl font-black text-primary">
-                      {viewingOrder.total == 0 ? "Matching Request" : `₹${Number(viewingOrder.total).toLocaleString("en-IN")}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground uppercase">Rate</p>
-                    <p className="font-bold">₹{Number(viewingOrder.price_per_meter || 0).toLocaleString("en-IN")}/m</p>
-                  </div>
-                </div>
-              </div>
-
-              {viewingOrder.apc_details && viewingOrder.apc_details.is_apc && (
-                <div className="rounded-xl bg-secondary/5 p-4 border border-secondary/20 space-y-3 mt-4">
-                  <div className="flex items-center gap-2 text-secondary">
-                    <Wand2 className="h-4 w-4" />
-                    <p className="text-xs font-bold uppercase tracking-widest">APC Request (As Per Cutting)</p>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2 text-sm">
-                    {viewingOrder.apc_details.target_color && (
-                      <div>
-                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Target Color</p>
-                        <p className="font-bold text-secondary">{viewingOrder.apc_details.target_color}</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-muted-foreground text-[10px] uppercase font-bold">Courier Dest. Address</p>
-                      <p className="italic">{viewingOrder.apc_details.cutting_address}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-[10px] uppercase font-bold">Request Type</p>
-                      <p className="font-bold">{viewingOrder.apc_details.quantity_type || "General APC"}</p>
-                    </div>
-                    {viewingOrder.apc_details.buyer_address && (
-                      <div className="md:col-span-2 border-t border-secondary/10 pt-2 mt-2">
-                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Buyer's Registered Address</p>
-                        <p className="font-medium text-foreground">{viewingOrder.apc_details.buyer_address}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-[10px] bg-secondary/10 p-2 rounded text-secondary font-medium">
-                    Note: This is a custom matching request. No payment has been collected.
-                  </div>
-                </div>
-              )}
-
-              {viewingOrder.notes && (
-                <div className="rounded-xl bg-orange-50 p-4 border border-orange-100 text-sm">
-                  <p className="text-xs font-bold text-orange-800 uppercase mb-1">Customer Notes</p>
-                  <p className="italic text-orange-900">"{viewingOrder.notes}"</p>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-3 pt-4 sm:flex-row">
-                {(viewingOrder.status === 'Pending' || viewingOrder.status === 'Confirmed') && (
-                  <Button
-                    className="flex-1 bg-secondary hover:bg-secondary/90 text-white font-bold"
-                    onClick={() => {
-                      updateOrderStatus(viewingOrder.id, 'Staged');
-                      setOrderDetailDialog(false);
-                    }}
-                  >
-                    Stage Order
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setOrderDetailDialog(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Color Manager Dialog (Advanced) */}
-      <Dialog open={colorManagerOpen} onOpenChange={setColorManagerOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Advanced Color Manager</DialogTitle>
-          </DialogHeader>
-          <Tabs defaultValue="bulk" className="mt-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="bulk"><Clipboard className="mr-2 h-4 w-4" /> Bulk Paste</TabsTrigger>
-              <TabsTrigger value="visual"><MousePointer2 className="mr-2 h-4 w-4" /> Visual Picker</TabsTrigger>
-              <TabsTrigger value="library"><Import className="mr-2 h-4 w-4" /> Master Sets</TabsTrigger>
-            </TabsList>
-
-            {/* BULK PASTE TAB */}
-            <TabsContent value="bulk" className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>Paste from Excel/Text</Label>
-                <Textarea
-                  value={bulkColorText}
-                  onChange={(e) => setBulkColorText(e.target.value)}
-                  placeholder="Red #FF0000&#10;Blue #0000FF&#10;...or ColorName,HexCode"
-                  className="min-h-[250px] font-mono text-xs"
-                />
-                <p className="text-[10px] text-muted-foreground">Supported formats: "Name Hex", "Name:Hex", "Name,Hex". One color per line.</p>
-              </div>
-              <Button className="w-full" onClick={() => {
-                const lines = bulkColorText.split('\n').filter(l => l.trim());
-                const detected = lines.map(line => {
-                  const cleaned = line.trim().replace(/[,:]/g, ' ');
-                  const parts = cleaned.split(/\s+/);
-                  if (parts.length >= 2) {
-                    const name = parts.slice(0, -1).join(' ');
-                    const hex = parts[parts.length - 1];
-                    if (hex.startsWith('#') || hex.match(/^[0-9a-fA-F]{3,6}$/)) {
-                      return `${name}:${hex.startsWith('#') ? hex : '#' + hex}`;
-                    }
-                  }
-                  return null;
-                }).filter(Boolean);
-
-                if (detected.length > 0) {
-                  setFabricForm(p => ({ ...p, colors: [p.colors, ...detected].filter(Boolean).join(', ') }));
-                  setBulkColorText("");
-                  setColorManagerOpen(false);
-                  toast.success(`Imported ${detected.length} colors`);
-                } else {
-                  toast.error("No valid colors detected. Check your format.");
-                }
-              }}>
-                Append Colors
-              </Button>
-            </TabsContent>
-
-            {/* VISUAL PICKER TAB */}
-            <TabsContent value="visual" className="space-y-4 pt-4">
-              <div className="flex flex-col items-center gap-4">
-                {!visualPickerImage ? (
-                  <div className="flex h-[300px] w-full flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                    <Label htmlFor="chart-upload" className="cursor-pointer">
-                      <div className="rounded-lg bg-primary px-4 py-2 text-primary-foreground">Upload Color Chart Image</div>
-                      <input id="chart-upload" type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => setVisualPickerImage(ev.target?.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
-                    </Label>
-                  </div>
-                ) : (
-                  <div className="w-full space-y-4">
-                    <div className="relative overflow-hidden rounded-xl border bg-black/5 flex justify-center">
-                      <img
-                        id="chart-img"
-                        src={visualPickerImage}
-                        alt="Color Chart"
-                        className="max-h-[400px] object-contain cursor-crosshair"
-                        onClick={(e) => {
-                          const img = e.currentTarget;
-                          const canvas = document.createElement('canvas');
-                          canvas.width = img.naturalWidth;
-                          canvas.height = img.naturalHeight;
-                          const ctx = canvas.getContext('2d');
-                          if (!ctx) return;
-                          ctx.drawImage(img, 0, 0);
-
-                          const rect = img.getBoundingClientRect();
-                          const scaleX = img.naturalWidth / rect.width;
-                          const scaleY = img.naturalHeight / rect.height;
-                          const x = (e.clientX - rect.left) * scaleX;
-                          const y = (e.clientY - rect.top) * scaleY;
-
-                          const pixel = ctx.getImageData(x, y, 1, 1).data;
-                          const hex = "#" + ("000000" + ((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]).toString(16)).slice(-6);
-
-                          const name = prompt("Color Name (e.g. Navy Blue)", `Color ${pickedColors.length + 1}`);
-                          if (name) {
-                            setPickedColors([...pickedColors, { name, hex }]);
-                            toast.success(`Picked ${hex}`);
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs text-muted-foreground">Click on the image to pick colors</p>
-                      <Button variant="ghost" size="sm" onClick={() => setVisualPickerImage(null)}>Clear Image</Button>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {pickedColors.map((c, i) => (
-                        <div key={i} className="flex items-center gap-2 rounded-lg border bg-card p-2 text-[10px] font-medium group">
-                          <div className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
-                          <span className="flex-1 truncate">{c.name}</span>
-                          <Button variant="ghost" size="icon" className="h-4 w-4 opacity-0 group-hover:opacity-100" onClick={() => setPickedColors(p => p.filter((_, idx) => idx !== i))}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <Button className="w-full" disabled={pickedColors.length === 0} onClick={() => {
-                      const formatted = pickedColors.map(p => `${p.name}:${p.hex}`).join(', ');
-                      setFabricForm(p => ({ ...p, colors: [p.colors, formatted].filter(Boolean).join(', ') }));
-                      setPickedColors([]);
-                      setColorManagerOpen(false);
-                      toast.success(`Added ${pickedColors.length} colors`);
-                    }}>
-                      Add Picked Colors to Fabric
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* MASTER LIBRARY TAB */}
-            <TabsContent value="library" className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 gap-3">
-                {colorLibraries.map((lib) => (
-                  <button
-                    key={lib.id}
-                    className="flex items-center justify-between rounded-xl border p-4 text-left hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setFabricForm(p => ({ ...p, colors: lib.colors }));
-                      setColorManagerOpen(false);
-                      toast.success(`Applied ${lib.name} library`);
-                    }}
-                  >
-                    <div>
-                      <h4 className="font-bold">{lib.name}</h4>
-                      <p className="text-xs text-muted-foreground">{lib.colors.split(',').length} Colors</p>
-                    </div>
-                    <div className="flex gap-1">
-                      {lib.colors.split(',').slice(0, 5).map((c, i) => (
-                        <div key={i} className="h-3 w-3 rounded-full border border-black/5" style={{ backgroundColor: c.split(':')[1] || '#ccc' }} />
-                      ))}
-                    </div>
-                  </button>
-                ))}
-                {colorLibraries.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No libraries saved. Create them in the "Libraries" tab.</p>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      {/* Color Library Management Dialog */}
-      <Dialog open={colorLibraryDialog} onOpenChange={setColorLibraryDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingLibrary ? "Edit Library" : "Create Color Library"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="lib-name">Library Name</Label>
-              <Input id="lib-name" value={libraryForm.name} onChange={(e) => setLibraryForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Earth Tones 2024" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lib-colors">Colors (Format: Name:HexCode, ...)</Label>
-              <Textarea id="lib-colors" value={libraryForm.colors} onChange={(e) => setLibraryForm(p => ({ ...p, colors: e.target.value }))} placeholder="Red:#FF0000, Blue:#0000FF" className="min-h-[150px]" />
-              <p className="text-[10px] text-muted-foreground">Tip: You can use the Advanced Color Manager in any fabric to generate this list easily.</p>
-            </div>
-          </div>
-          <Button onClick={saveLibrary}>{editingLibrary ? "Update" : "Create"} Library</Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* Design Request Response Dialog */}
-      <Dialog open={!!designResponseDialog} onOpenChange={(open) => !open && setDesignResponseDialog(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Respond to Design Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Availability</Label>
-                <Select
-                  value={designResponseForm.admin_availability}
-                  onValueChange={(v) => setDesignResponseForm(p => ({ ...p, admin_availability: v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Available">Available</SelectItem>
-                    <SelectItem value="Program">Program</SelectItem>
-                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Price (₹/meter)</Label>
-                <Input
-                  type="number"
-                  value={designResponseForm.admin_price}
-                  onChange={(e) => setDesignResponseForm(p => ({ ...p, admin_price: parseFloat(e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Weight/Quality</Label>
-                <Input
-                  placeholder="e.g. 180 GM"
-                  value={designResponseForm.admin_weight}
-                  onChange={(e) => setDesignResponseForm(p => ({ ...p, admin_weight: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Delivery Days</Label>
-                <Input
-                  placeholder="e.g. 15 Days"
-                  value={designResponseForm.admin_program}
-                  onChange={(e) => setDesignResponseForm(p => ({ ...p, admin_program: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Internal Note/Revert</Label>
-              <Textarea
-                placeholder="Write your response to the buyer..."
-                value={designResponseForm.admin_note}
-                onChange={(e) => setDesignResponseForm(p => ({ ...p, admin_note: e.target.value }))}
-              />
-            </div>
-          </div>
-          <Button className="w-full" onClick={submitDesignResponse}>Send Revert to Buyer</Button>
-        </DialogContent>
-      </Dialog>
       <Footer />
+    </div>
+  );
+};
+
+// Admin Roles Manager sub-component
+const AdminRolesManager = () => {
+<<<<<<< HEAD
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("*")
+    ]);
+    
+    setProfiles(profilesRes.data || []);
+    setRoles(rolesRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const toggleAdmin = async (userId: string, currentRole?: string) => {
+    if (currentRole === "admin") {
+      // Revoke
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      
+      if (error) toast.error("Failed to revoke admin rights");
+      else {
+        toast.success("Admin rights revoked");
+        fetchData();
+      }
+    } else {
+      // Grant
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: "admin" });
+      
+      if (error) toast.error("Failed to grant admin rights");
+      else {
+        toast.success("Admin rights granted");
+        fetchData();
+      }
+    }
+  };
+
+  const filteredProfiles = profiles.filter(p => 
+    p.buyer_name?.toLowerCase().includes(search.toLowerCase()) || 
+    p.company_name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold">Manage User Access</h3>
+        <div className="relative w-64">
+          <Input 
+            placeholder="Search users..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+          <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {loading ? (
+          <p className="text-center text-muted-foreground py-10">Loading users...</p>
+        ) : filteredProfiles.length === 0 ? (
+          <p className="text-center text-muted-foreground py-10">No users found.</p>
+        ) : (
+          filteredProfiles.map((p) => {
+            const isAdmin = roles.some(r => r.user_id === p.user_id && r.role === "admin");
+            return (
+              <div key={p.id} className="flex items-center justify-between rounded-xl border bg-card p-4 transition-all hover:shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    {p.buyer_name?.[0] || p.company_name?.[0] || "?"}
+                  </div>
+                  <div>
+                    <p className="font-medium">{p.buyer_name || "New User"}</p>
+                    <p className="text-xs text-muted-foreground">{p.company_name || "No company"} · Joined {new Date(p.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {isAdmin ? (
+                    <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">Buyer</Badge>
+                  )}
+                  <Button 
+                    variant={isAdmin ? "destructive" : "outline"} 
+                    size="sm"
+                    onClick={() => toggleAdmin(p.user_id, isAdmin ? "admin" : undefined)}
+                  >
+                    {isAdmin ? "Revoke Admin" : "Grant Admin"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
+=======
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<string>("admin");
+  const [roles, setRoles] = useState<any[]>([]);
+
+  const fetchRoles = async () => {
+    const { data: rolesData } = await supabase.from("user_roles").select("*");
+    if (!rolesData || rolesData.length === 0) { setRoles([]); return; }
+    // Fetch profiles to get buyer names
+    const userIds = rolesData.map((r) => r.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("user_id, buyer_name, company_name").in("user_id", userIds);
+    const profileMap: Record<string, { buyer_name: string; company_name: string }> = {};
+    (profilesData || []).forEach((p) => { profileMap[p.user_id] = p; });
+    setRoles(rolesData.map((r) => ({ ...r, buyer_name: profileMap[r.user_id]?.buyer_name || "", company_name: profileMap[r.user_id]?.company_name || "" })));
+  };
+
+  useEffect(() => { fetchRoles(); }, []);
+
+  const addRole = async () => {
+    // We need to find user by email - using profiles or a lookup
+    toast.info("To assign roles, add the user_id and role directly via the backend. Email lookup requires additional setup.");
+  };
+
+  const removeRole = async (roleId: string) => {
+    const { error } = await supabase.from("user_roles").delete().eq("id", roleId);
+    if (error) toast.error("Failed to remove role");
+    else { toast.success("Role removed"); fetchRoles(); }
+  };
+
+  return (
+    <div>
+      <h3 className="font-display text-lg font-semibold mb-4">User Roles</h3>
+      <div className="space-y-3">
+        {roles.map((r) => (
+          <div key={r.id} className="flex items-center justify-between rounded-lg border bg-card p-4">
+            <div>
+              <p className="font-medium text-sm">{r.buyer_name || r.company_name || r.user_id}</p>
+              <Badge variant="outline" className="mt-1">{r.role}</Badge>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => removeRole(r.id)}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+        {roles.length === 0 && <p className="text-muted-foreground text-sm">No roles assigned yet.</p>}
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
+      </div>
     </div>
   );
 };

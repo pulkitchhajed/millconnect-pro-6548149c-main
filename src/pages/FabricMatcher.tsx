@@ -13,7 +13,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-// Fabric Matcher Page
 const FabricMatcher = () => {
   const { data: fabrics } = useFabrics();
 

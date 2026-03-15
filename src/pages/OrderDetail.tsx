@@ -4,32 +4,46 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, CheckCircle, Truck, MapPin, Clock, Download, XCircle, ClipboardList, FileText, Wand2, HandCoins, CreditCard } from "lucide-react";
+<<<<<<< HEAD
+import { ArrowLeft, Package, CheckCircle, Truck, MapPin, Clock, Download, XCircle, ClipboardList, FileText } from "lucide-react";
+=======
+import { ArrowLeft, Package, CheckCircle, Truck, MapPin, Clock, Download } from "lucide-react";
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 
-const statusSteps = ["Pending", "Confirmed", "Advance Payment Received", "Bill Amount Received", "Staged", "Shipped", "Delivered"];
+<<<<<<< HEAD
+const statusSteps = ["Pending", "Confirmed", "Shipped", "Delivered"];
 const statusIcons: Record<string, any> = {
   Pending: Clock,
   Confirmed: CheckCircle,
-  "Advance Payment Received": HandCoins,
-  "Bill Amount Received": CreditCard,
-  Staged: Package,
   Shipped: Truck,
   Delivered: MapPin,
   Cancelled: XCircle,
+=======
+const statusSteps = ["Pending", "Confirmed", "In Production", "Shipped", "Delivered"];
+const statusIcons: Record<string, any> = {
+  Pending: Clock,
+  Confirmed: CheckCircle,
+  "In Production": Package,
+  Shipped: Truck,
+  Delivered: MapPin,
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 };
 
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   Confirmed: "bg-primary/10 text-primary border-primary/20",
-  "Advance Payment Received": "bg-secondary/10 text-secondary border-secondary/20",
-  "Bill Amount Received": "bg-success/10 text-success border-success/20",
-  Staged: "bg-secondary/15 text-secondary border-secondary/30",
+<<<<<<< HEAD
   Shipped: "bg-success/10 text-success border-success/20",
   Delivered: "bg-success/15 text-success border-success/30",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+=======
+  "In Production": "bg-secondary/10 text-secondary border-secondary/20",
+  Shipped: "bg-success/10 text-success border-success/20",
+  Delivered: "bg-success/15 text-success border-success/30",
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 };
 
 const generateOrderPDF = (o: any) => {
@@ -63,6 +77,7 @@ const generateOrderPDF = (o: any) => {
     ["Date", new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })],
     ["Status", o.status],
     ["Fabric", o.fabric_name],
+<<<<<<< HEAD
   ];
 
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
@@ -72,22 +87,23 @@ const generateOrderPDF = (o: any) => {
     info.push(["Quantity Type", o.quantity_type || "Lump"]);
     info.push(["Quantity", `${o.quantity} meters`]);
   }
-
+  
   info.push(["Rate", `₹${Number(o.price_per_meter).toLocaleString("en-IN")}/meter`]);
   info.push(["Total Amount", `₹${Number(o.total).toLocaleString("en-IN")}`]);
 
-  if (o.apc_details?.is_apc) {
-    info.push(["APC Request", "Yes"]);
-    info.push(["APC Target Color", o.apc_details.target_color]);
-    info.push(["APC Cutting Address", o.apc_details.cutting_address]);
-  }
-
+=======
+    ["Quantity", `${o.quantity} meters`],
+    ["Rate", `₹${Number(o.price_per_meter).toLocaleString("en-IN")}/meter`],
+    ["Total", `₹${Number(o.total).toLocaleString("en-IN")}`],
+  ];
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   info.forEach(([l, v]) => {
     doc.setTextColor(120); doc.text(l, m, y);
     doc.setTextColor(0); doc.text(v, 70, y);
     y += 7;
   });
 
+<<<<<<< HEAD
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
     y += 5;
     doc.setFont("helvetica", "bold");
@@ -95,7 +111,7 @@ const generateOrderPDF = (o: any) => {
     y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-
+    
     // Header for items table
     doc.setTextColor(120);
     doc.text("Color", m, y);
@@ -115,6 +131,8 @@ const generateOrderPDF = (o: any) => {
     y += 4;
   }
 
+=======
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   y += 6;
   doc.setFont("helvetica", "bold");
   doc.text("Delivery Information", m, y);
@@ -123,7 +141,7 @@ const generateOrderPDF = (o: any) => {
 
   const del: [string, string][] = [
     ["Name", o.buyer_name],
-    ["Billing Name", o.billing_name],
+    ["Company", o.company_name],
     ["Phone", o.phone],
     ["Email", o.email],
     ["Address", o.delivery_address],
@@ -159,7 +177,7 @@ const generateOrderPDF = (o: any) => {
 
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text("Thank you for your order — Mill Connect", m, 280);
+  doc.text("Thank you for your order — Hera Textiles", m, 280);
   doc.save(`Hera-Order-${o.id.slice(0, 8)}.pdf`);
 };
 
@@ -176,7 +194,11 @@ const OrderDetail = () => {
     const fetchOrder = async () => {
       const { data } = await supabase
         .from("orders")
+<<<<<<< HEAD
         .select("*, fabrics:fabric_id_ref(image_url, type, name)")
+=======
+        .select("*")
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
         .eq("id", orderId)
         .single();
       setOrder(data);
@@ -224,6 +246,7 @@ const OrderDetail = () => {
   const currentStepIndex = statusSteps.indexOf(order.status);
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-background/50">
       <Navbar />
       <div className="container mx-auto px-4 py-12">
@@ -268,8 +291,8 @@ const OrderDetail = () => {
                 ) : (
                   <div className="relative flex items-center justify-between">
                     <div className="absolute left-0 right-0 top-6 h-1 -translate-y-1/2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-1000"
+                      <div 
+                        className="h-full bg-primary transition-all duration-1000" 
                         style={{ width: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%` }}
                       />
                     </div>
@@ -279,12 +302,13 @@ const OrderDetail = () => {
                       const isCurrent = i === currentStepIndex;
                       return (
                         <div key={step} className="flex flex-col items-center relative z-10">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${isCurrent
+                          <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                            isCurrent
                               ? "bg-primary text-primary-foreground ring-8 ring-primary/10 scale-110"
                               : isCompleted
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-background border-2 border-muted text-muted-foreground"
-                            }`}>
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border-2 border-muted text-muted-foreground"
+                          }`}>
                             <Icon className="h-5 w-5" />
                           </div>
                           <span className={`mt-3 text-xs font-bold uppercase tracking-tighter ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
@@ -295,41 +319,66 @@ const OrderDetail = () => {
                     })}
                   </div>
                 )}
+=======
+    <div className="min-h-screen">
+      <Navbar />
+      <div className="container mx-auto px-4 py-12">
+        <Button variant="ghost" className="mb-6" onClick={() => navigate("/orders")}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Orders
+        </Button>
+
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-3xl font-bold">{order.fabric_name}</h1>
+                <Badge variant="outline" className={statusColors[order.status] || ""}>
+                  {order.status}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Order placed on {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
+
+            {/* Status Timeline */}
+            <div className="rounded-xl border bg-card p-6">
+              <h2 className="font-display text-lg font-semibold mb-6">Order Progress</h2>
+              <div className="flex items-center justify-between">
+                {statusSteps.map((step, i) => {
+                  const Icon = statusIcons[step] || Clock;
+                  const isCompleted = i <= currentStepIndex;
+                  const isCurrent = i === currentStepIndex;
+                  return (
+                    <div key={step} className="flex flex-col items-center relative flex-1">
+                      {i > 0 && (
+                        <div className={`absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2 ${
+                          i <= currentStepIndex ? "bg-primary" : "bg-muted"
+                        }`} />
+                      )}
+                      <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full ${
+                        isCurrent
+                          ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                          : isCompleted
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className={`mt-2 text-xs text-center ${isCurrent ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                        {step}
+                      </span>
+                    </div>
+                  );
+                })}
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
               </div>
             </div>
 
-            {/* Payment Instructions */}
-            {order.status === "Confirmed" && (
-              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                    <CreditCard className="h-6 w-6" />
-                  </div>
-                  <h2 className="font-display text-2xl font-bold">Payment Action Required</h2>
-                </div>
-                <div className="space-y-6">
-                  <div className="rounded-2xl bg-background border p-6">
-                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground/80">
-                      {order.payment_message || "Your order has been confirmed! Please proceed with the advance payment of ₹5000 to initiate the dispatching process. You can find the bank details above or use the payment link below."}
-                    </p>
-                  </div>
-                  {order.payment_link && (
-                    <Button 
-                      className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-premium"
-                      onClick={() => window.open(order.payment_link, "_blank")}
-                    >
-                      <HandCoins className="mr-2 h-5 w-5" /> Pay Advance ₹5000
-                    </Button>
-                  )}
-                  <p className="text-center text-xs text-muted-foreground italic">
-                    Dispatching starts immediately after advance payment verification.
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Shipment Tracking */}
             {(order.courier_name || order.tracking_number) && (
+<<<<<<< HEAD
               <div className="rounded-3xl border bg-card p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="rounded-lg bg-success/10 p-2 text-success">
@@ -354,6 +403,27 @@ const OrderDetail = () => {
                     <div className="rounded-2xl bg-muted/30 p-5">
                       <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Dispatched</span>
                       <p className="mt-1 text-lg font-bold">{new Date(order.dispatch_date).toLocaleDateString("en-IN")}</p>
+=======
+              <div className="rounded-xl border bg-card p-6">
+                <h2 className="font-display text-lg font-semibold mb-4">Shipment Details</h2>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {order.courier_name && (
+                    <div>
+                      <span className="text-muted-foreground">Courier</span>
+                      <p className="font-medium">{order.courier_name}</p>
+                    </div>
+                  )}
+                  {order.tracking_number && (
+                    <div>
+                      <span className="text-muted-foreground">Tracking Number</span>
+                      <p className="font-medium">{order.tracking_number}</p>
+                    </div>
+                  )}
+                  {order.dispatch_date && (
+                    <div>
+                      <span className="text-muted-foreground">Dispatch Date</span>
+                      <p className="font-medium">{new Date(order.dispatch_date).toLocaleDateString("en-IN")}</p>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                     </div>
                   )}
                 </div>
@@ -362,6 +432,7 @@ const OrderDetail = () => {
 
             {/* Admin Notes */}
             {notes.length > 0 && (
+<<<<<<< HEAD
               <div className="rounded-3xl border bg-card p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="rounded-lg bg-secondary/10 p-2 text-secondary">
@@ -377,6 +448,15 @@ const OrderDetail = () => {
                         <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
                       </div>
                       <p className="text-xs font-medium text-muted-foreground">
+=======
+              <div className="rounded-xl border bg-card p-6">
+                <h2 className="font-display text-lg font-semibold mb-4">Updates</h2>
+                <div className="space-y-3">
+                  {notes.map((note) => (
+                    <div key={note.id} className="rounded-lg bg-muted/50 p-4">
+                      <p className="text-sm">{note.note}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                         {new Date(note.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
@@ -388,6 +468,7 @@ const OrderDetail = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
+<<<<<<< HEAD
             <div className="sticky top-24 space-y-8">
               {/* Summary Card */}
               <div className="rounded-3xl border bg-card p-8 shadow-sm">
@@ -403,7 +484,7 @@ const OrderDetail = () => {
                             <Badge variant="outline" className="text-[10px] font-bold px-2 py-0">{item.quantityType}</Badge>
                           </div>
                           <div className="flex justify-between items-end">
-                            <span className="text-lg font-bold">{item.quantity} {order.fabrics?.unit || 'meters'}</span>
+                            <span className="text-lg font-bold">{item.quantity}m</span>
                             <span className="text-xs text-muted-foreground">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
                           </div>
                         </div>
@@ -411,7 +492,7 @@ const OrderDetail = () => {
                     </div>
                   ) : (
                     <div className="space-y-4 pb-6 border-b">
-                      <div className="flex justify-between">
+                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Color</span>
                         <span className="font-bold">{order.selected_color || "Standard"}</span>
                       </div>
@@ -425,7 +506,7 @@ const OrderDetail = () => {
                       </div>
                     </div>
                   )}
-
+                  
                   <div className="pt-6">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal Rate</span>
@@ -435,48 +516,28 @@ const OrderDetail = () => {
                       <span className="font-bold text-lg">Total</span>
                       <span className="text-2xl font-black text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
                     </div>
+=======
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-xl border bg-card p-6">
+                <h3 className="font-display text-lg font-semibold">Order Details</h3>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quantity</span>
+                    <span className="font-medium">{order.quantity} meters</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rate</span>
+                    <span className="font-medium">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-3">
+                    <span className="font-semibold">Total</span>
+                    <span className="text-xl font-bold text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
                   </div>
                 </div>
               </div>
 
-              {order.apc_details && order.apc_details.is_apc && (
-                <div className="rounded-3xl border border-secondary/20 bg-secondary/5 p-8 shadow-sm space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-secondary/10 p-2 text-secondary">
-                      <Wand2 className="h-6 w-6" />
-                    </div>
-                    <h3 className="font-display text-2xl font-bold text-secondary">APC (As Per Cutting)</h3>
-                  </div>
-                  
-                  <div className="grid gap-8 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Color</p>
-                      <div className="flex items-center gap-3 rounded-2xl bg-background border p-4">
-                        <div className="h-5 w-5 rounded-full border shadow-sm bg-secondary/20" />
-                        <p className="font-bold text-lg">{order.apc_details.target_color}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Cutting Address</p>
-                      <div className="rounded-2xl bg-background border p-4">
-                        <p className="font-semibold text-sm leading-relaxed">{order.apc_details.cutting_address}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">APC Quantity</p>
-                      <div className="rounded-2xl bg-background border p-4">
-                        <p className="font-bold text-lg text-primary">{order.apc_details.quantity || order.quantity} {order.fabrics?.unit || "m"}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-secondary/10 rounded-xl p-3 flex items-center gap-2 text-[10px] font-bold text-secondary uppercase tracking-tighter">
-                    <CheckCircle className="h-3 w-3" /> Custom Cutting Instructions requested for this order
-                  </div>
-                </div>
-              )}
-
+<<<<<<< HEAD
               {/* Delivery Details */}
               <div className="rounded-3xl border bg-card p-8 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
@@ -486,7 +547,7 @@ const OrderDetail = () => {
                 <div className="space-y-4 text-sm">
                   <div>
                     <p className="font-bold text-lg">{order.buyer_name}</p>
-                    <p className="font-medium text-muted-foreground">{order.billing_name}</p>
+                    <p className="font-medium text-muted-foreground">{order.company_name}</p>
                   </div>
                   <div className="rounded-2xl bg-muted/30 p-4 font-medium leading-relaxed">
                     {order.delivery_address}
@@ -522,6 +583,42 @@ const OrderDetail = () => {
                   </div>
                 )}
               </div>
+=======
+              <div className="rounded-xl border bg-card p-6">
+                <h3 className="font-display text-lg font-semibold">Delivery</h3>
+                <div className="mt-4 text-sm">
+                  <p className="font-medium">{order.buyer_name}</p>
+                  <p className="text-muted-foreground">{order.company_name}</p>
+                  <p className="mt-2 text-muted-foreground">{order.delivery_address}</p>
+                  <p className="mt-2 text-muted-foreground">{order.phone}</p>
+                  <p className="text-muted-foreground">{order.email}</p>
+                </div>
+              </div>
+
+              {order.notes && (
+                <div className="rounded-xl border bg-card p-6">
+                  <h3 className="font-display text-lg font-semibold">Your Notes</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{order.notes}</p>
+                </div>
+              )}
+
+              {/* Download PDF */}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => generateOrderPDF(order)}
+              >
+                <Download className="mr-2 h-4 w-4" /> Download Order Confirmation
+              </Button>
+
+              {/* Repeat Order */}
+              <Button
+                className="w-full"
+                onClick={() => navigate(`/order/${order.fabric_id_ref || order.fabric_id}`)}
+              >
+                Reorder This Fabric
+              </Button>
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
             </div>
           </div>
         </div>

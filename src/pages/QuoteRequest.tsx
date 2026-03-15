@@ -1,5 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+<<<<<<< HEAD
+import { useState, useMemo, useEffect } from "react";
+=======
+import { useState } from "react";
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+<<<<<<< HEAD
 import { ArrowLeft, Plus, Trash2, Search } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,19 +23,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFieldArray } from "react-hook-form";
 
 const itemSchema = z.object({
-  colors: z.array(z.string()).min(1, "At least one color required"),
+  color: z.string().min(1, "Color is required"),
   quantity: z.coerce.number().min(0.1, "Quantity must be at least 0.1"),
   quantityType: z.enum(["Lump", "Cut Pack"]),
 });
 
 const quoteSchema = z.object({
   items: z.array(itemSchema).min(1, "At least one item required"),
+=======
+import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useFabric } from "@/hooks/useFabrics";
+import { supabase } from "@/integrations/supabase/client";
+
+const quoteSchema = z.object({
+  quantity: z.coerce.number().min(1, "Quantity required"),
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   message: z.string().max(1000).optional(),
 });
 
 type QuoteFormData = z.infer<typeof quoteSchema>;
 
-const ColorSelector = ({ colors, selectedColors, onToggle }: { colors: string; selectedColors: string[]; onToggle: (color: string) => void }) => {
+<<<<<<< HEAD
+const ColorSelector = ({ colors, selectedColor, onSelect }: { colors: string; selectedColor: string; onSelect: (color: string) => void }) => {
   const [search, setSearch] = useState("");
   
   const allColors = colors.split(",").map(c => {
@@ -59,12 +74,12 @@ const ColorSelector = ({ colors, selectedColors, onToggle }: { colors: string; s
       <div className="max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
         <div className="flex flex-wrap gap-2">
           {filteredColors.map((c, idx) => {
-            const isSelected = selectedColors.includes(c.name);
+            const isSelected = selectedColor === c.name;
             return (
               <button
                 key={idx}
                 type="button"
-                onClick={() => onToggle(c.name)}
+                onClick={() => onSelect(c.name)}
                 className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all outline-none ${
                   isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:border-primary/50"
                 }`}
@@ -83,6 +98,8 @@ const ColorSelector = ({ colors, selectedColors, onToggle }: { colors: string; s
   );
 };
 
+=======
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
 const QuoteRequest = () => {
   const { fabricId } = useParams();
   const navigate = useNavigate();
@@ -90,10 +107,17 @@ const QuoteRequest = () => {
   const { data: fabric, isLoading } = useFabric(fabricId);
   const [submitted, setSubmitted] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<QuoteFormData>({
+<<<<<<< HEAD
+  const queryParams = new URLSearchParams(window.location.search);
+  const colorsParam = queryParams.get("colors") || queryParams.get("color") || "";
+  const initialColors = useMemo(() => colorsParam ? colorsParam.split(",").map(c => c.trim()).filter(Boolean) : [], [colorsParam]);
+
+  const { register, handleSubmit, formState: { errors }, watch, setValue, control, reset } = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
     defaultValues: { 
-      items: [{ colors: [], quantity: "" as any, quantityType: "" as any }],
+      items: initialColors.length > 0 
+        ? initialColors.map(c => ({ color: c, quantity: fabric?.min_order || 100, quantityType: "Lump" }))
+        : [{ color: "", quantity: 100, quantityType: "Lump" }] 
     },
   });
 
@@ -102,6 +126,15 @@ const QuoteRequest = () => {
     name: "items",
   });
 
+  const watchedItems = watch("items");
+
+=======
+  const { register, handleSubmit, formState: { errors } } = useForm<QuoteFormData>({
+    resolver: zodResolver(quoteSchema),
+    defaultValues: { quantity: fabric?.min_order || 1000 },
+  });
+
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
   if (!user) {
     navigate(`/auth?redirect=/quote/${fabricId}`);
     return null;
@@ -119,25 +152,43 @@ const QuoteRequest = () => {
     );
   }
 
+<<<<<<< HEAD
+  // Effect to handle initial colors when fabric loads
+  useEffect(() => {
+    if (fabric) {
+      const isDefaultState = fields.length === 1 && !fields[0].color;
+      if (isDefaultState || initialColors.length > 0) {
+        const itemsToSet = initialColors.length > 0
+          ? initialColors.map(c => ({ color: c, quantity: fabric.min_order, quantityType: "Lump" as const }))
+          : [{ color: fabric.colors?.split(",")[0]?.split(":")[0]?.trim() || "", quantity: fabric.min_order, quantityType: "Lump" as const }];
+        
+        reset((prev) => ({ 
+          ...prev, 
+          items: itemsToSet
+        }));
+      }
+    }
+  }, [fabric, reset, initialColors]);
+
   const onSubmit = async (data: QuoteFormData) => {
     const totalQuantity = data.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-    const allSelectedColors = Array.from(new Set(data.items.flatMap(i => i.colors))).join(", ");
-    
-    // For the individual items JSON, we preserve the arrays
-    const itemsJson = data.items.map(item => ({
-      ...item,
-      color: item.colors.join(", ") // Supporting legacy single color string if needed, while keeping array in colors
-    }));
-
+=======
+  const onSubmit = async (data: QuoteFormData) => {
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
     const { error } = await supabase.from("quote_requests").insert({
       user_id: user.id,
       fabric_id: fabric.id,
       fabric_name: fabric.name,
+<<<<<<< HEAD
       quantity: totalQuantity,
       message: data.message || null,
-      selected_color: allSelectedColors,
+      selected_color: data.items.map(i => i.color).join(", "),
       quantity_type: data.items.length > 1 ? "Mixed" : data.items[0].quantityType,
-      items: itemsJson, 
+      items: data.items, // JSONB field
+=======
+      quantity: data.quantity,
+      message: data.message || null,
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
     });
     if (error) { toast.error("Failed to submit quote request"); return; }
     setSubmitted(true);
@@ -157,6 +208,7 @@ const QuoteRequest = () => {
         <Button variant="ghost" className="mb-6" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
+<<<<<<< HEAD
         <div className="flex flex-col items-center text-center">
           {fabric.image_url && (
             <div className="mb-6 h-32 w-32 overflow-hidden rounded-3xl border-4 border-background shadow-xl ring-1 ring-border">
@@ -170,28 +222,21 @@ const QuoteRequest = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
-              <h2 className="font-display text-xl font-semibold text-foreground">Requested Items</h2>
+              <h2 className="text-xl font-semibold text-foreground">Requested Items</h2>
               <Button 
                 type="button" 
                 variant="outline" 
                 size="sm" 
-                onClick={() => append({ colors: [], quantity: "", quantityType: "" } as any)}
+                onClick={() => append({ color: "", quantity: fabric.min_order, quantityType: "Lump" })}
               >
-                <Plus className="mr-1 h-4 w-4" /> Add Item Config
+                <Plus className="mr-1 h-4 w-4" /> Add Color
               </Button>
             </div>
 
             {fields.map((field, index) => {
-              const itemColors = watch(`items.${index}.colors`) || [];
+              const itemColor = watch(`items.${index}.color`);
               const itemQuantityType = watch(`items.${index}.quantityType`);
               
-              const handleColorToggle = (color: string) => {
-                const newColors = itemColors.includes(color)
-                  ? itemColors.filter(c => c !== color)
-                  : [...itemColors, color];
-                setValue(`items.${index}.colors`, newColors, { shouldValidate: true, shouldDirty: true });
-              };
-
               return (
                 <div key={field.id} className="relative rounded-xl border bg-card p-6 shadow-sm">
                   {fields.length > 1 && (
@@ -208,21 +253,22 @@ const QuoteRequest = () => {
                   
                   <div className="space-y-6">
                     <div>
-                      <Label className="mb-2 block">Select Colors * <span className="text-xs text-muted-foreground font-normal">(choose one or more)</span></Label>
+                      <Label className="mb-2 block">Select Color *</Label>
                       <ColorSelector 
                         colors={fabric.colors || ""} 
-                        selectedColors={itemColors} 
-                        onToggle={handleColorToggle} 
+                        selectedColor={itemColor} 
+                        onSelect={(color) => setValue(`items.${index}.color`, color)} 
                       />
-                      {errors.items?.[index]?.colors && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.colors?.message}</p>}
+                      {errors.items?.[index]?.color && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.color?.message}</p>}
                     </div>
 
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
                         <Label>Quantity Type *</Label>
                         <RadioGroup
+                          defaultValue="Lump"
                           value={itemQuantityType}
-                          onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v, { shouldValidate: true, shouldDirty: true })}
+                          onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v)}
                           className="mt-3 flex gap-4"
                         >
                           <div className="flex items-center space-x-2">
@@ -237,11 +283,10 @@ const QuoteRequest = () => {
                       </div>
 
                       <div>
-                        <Label htmlFor={`q-quantity-${index}`}>Total Quantity ({fabric.unit}) *</Label>
+                        <Label htmlFor={`q-quantity-${index}`}>Quantity ({fabric.unit}) *</Label>
                         <Input
                           id={`q-quantity-${index}`}
                           type="number"
-                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
                           step={itemQuantityType === "Cut Pack" ? "1.20" : "1"}
                           {...register(`items.${index}.quantity` as const, {
                             validate: (val) => {
@@ -262,6 +307,16 @@ const QuoteRequest = () => {
                 </div>
               );
             })}
+=======
+        <h1 className="font-display text-3xl font-bold">Request Quote</h1>
+        <p className="mt-2 text-muted-foreground">Get a custom quote for <strong>{fabric.name}</strong></p>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
+          <div>
+            <Label htmlFor="quantity">Quantity ({fabric.unit}) *</Label>
+            <Input id="quantity" type="number" {...register("quantity")} className="mt-1.5" />
+            {errors.quantity && <p className="mt-1 text-sm text-destructive">{errors.quantity.message}</p>}
+>>>>>>> e46736471f833d2da9d10d2067485c256946635b
           </div>
           <div>
             <Label htmlFor="message">Message (optional)</Label>
