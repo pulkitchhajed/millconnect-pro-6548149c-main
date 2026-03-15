@@ -16,7 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, SlidersHorizontal, Package, LayoutGrid, Trash2, Edit, ChevronLeft, ChevronRight, Import, Clipboard, MousePointer2, Settings, Truck, Wand2, CheckCircle, Clock, Users, ClipboardList, TrendingUp, BarChart3, MessageSquare, X, Image as ImageIcon, MapPin, Scan, PlusCircle, CreditCard } from "lucide-react";
-import { ColorSwatchList } from "@/components/ColorSwatch";
+import { ColorSwatchList } from "@/components/ColorSwatch.tsx";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";

@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ShoppingBag, LayoutGrid } from "lucide-react";
-import { ColorSwatchList } from "@/components/ColorSwatch";
+import { ColorSwatchList } from "@/components/ColorSwatch.tsx";
 
 interface FilterState {
   search: string;
