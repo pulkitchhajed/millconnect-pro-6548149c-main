@@ -1,4 +1,4 @@
-import { Package } from "lucide-react";
+import { Package, Phone } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -12,11 +12,17 @@ const Footer = () => {
             <span className="font-display text-lg font-bold">Mill-Connect</span>
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
-            Contact us: <a href="tel:9425062020" className="text-primary hover:underline">9425062020</a>, <a href="tel:9294662020" className="text-primary hover:underline">9294662020</a>
-          </p>
-          <p className="max-w-md text-sm text-muted-foreground">
             Your trusted partner for quality textile sourcing. Connecting garment manufacturers with premium mills.
           </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span>Contact Us: </span>
+              <a href="tel:9425062020" className="hover:text-primary transition-colors">9425062020</a>
+              <span>/</span>
+              <a href="tel:9294662020" className="hover:text-primary transition-colors">9294662020</a>
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Mill-Connect. All rights reserved.
           </p>

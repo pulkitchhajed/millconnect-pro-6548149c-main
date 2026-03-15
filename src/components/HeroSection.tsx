@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck, Truck, Clock } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, Clock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-textiles.jpg";
 
@@ -14,26 +14,31 @@ const HeroSection = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/30" />
 
-        <div className="container relative z-10 mx-auto px-4 py-24">
-          <div className="max-w-2xl">
-            <p className="mb-4 inline-block rounded-full border border-secondary/40 bg-secondary/10 px-4 py-1.5 text-sm font-medium text-primary-foreground/90">
+        <div className="container relative z-10 mx-auto px-6 py-20 md:py-32">
+          <div className="max-w-2xl text-center md:text-left mx-auto md:mx-0">
+            <p className="mb-6 inline-block rounded-full border border-secondary/40 bg-secondary/10 px-4 py-1.5 text-[10px] md:text-sm font-black uppercase tracking-widest text-primary-foreground/90">
               Mill-Connect — Your Trusted Sourcing Partner
             </p>
-            <h1 className="mb-6 font-display text-4xl font-bold leading-tight text-primary-foreground md:text-6xl">
+            <h1 className="mb-6 font-display text-4xl font-bold leading-[1.1] text-primary-foreground md:text-6xl md:leading-tight">
               Premium Cloth,{" "}
-              <span className="text-secondary">Delivered</span> to Your Factory
+              <span className="text-orange-500">Delivered</span> to Your Factory
             </h1>
-            <p className="mb-8 max-w-lg text-lg text-primary-foreground/80">
+            <p className="mb-10 max-w-lg text-lg text-primary-foreground/80 md:text-xl font-medium leading-relaxed">
               Order quality fabrics directly from top mills. We handle sourcing, quality checks, and delivery — so you can focus on manufacturing.
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="text-base">
+            <div className="flex flex-col gap-4 sm:flex-row justify-center md:justify-start">
+              <Button asChild size="lg" className="h-14 px-8 text-base font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform">
                 <Link to="/catalog">
-                  Browse Catalog <ArrowRight className="ml-2 h-4 w-4" />
+                  Browse Catalog <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 text-base">
+              <Button asChild variant="outline" size="lg" className="h-14 px-8 border-primary-foreground/30 bg-primary-foreground/5 text-primary-foreground hover:bg-primary-foreground/20 text-base font-black uppercase tracking-wider backdrop-blur-sm">
                 <Link to="/orders">Track Orders</Link>
+              </Button>
+              <Button asChild size="lg" className="h-14 px-8 bg-orange-500 hover:bg-orange-600 text-white text-base font-black uppercase tracking-wider shadow-xl shadow-orange-500/20 hover:scale-105 active:scale-95 transition-transform">
+                <Link to="/design-requests">
+                  APC Requests <Wand2 className="ml-2 h-5 w-5" />
+                </Link>
               </Button>
             </div>
           </div>

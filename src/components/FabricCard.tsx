@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ColorSwatchList } from "./ColorSwatch";
 
 export interface FabricItem {
   id: string;
@@ -12,6 +13,7 @@ export interface FabricItem {
   unit: string;
   available: boolean;
   description: string;
+  apc_available?: boolean;
 }
 
 export const fabricCatalog: FabricItem[] = [
@@ -49,8 +51,11 @@ const FabricCard = ({ fabric }: { fabric: FabricItem }) => {
       <p className="mt-1 text-sm text-muted-foreground">{fabric.description}</p>
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <div>
-          <span className="text-muted-foreground">Color</span>
-          <p className="font-medium">{fabric.color}</p>
+          <span className="text-muted-foreground">Colors</span>
+          <div className="mt-1">
+            <ColorSwatchList colors={fabric.color} limit={6} size="sm" />
+            {!fabric.color && <span className="text-xs font-medium block">Standard</span>}
+          </div>
         </div>
         <div>
           <span className="text-muted-foreground">Min. Order</span>
