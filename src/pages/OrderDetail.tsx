@@ -4,15 +4,18 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, CheckCircle, Truck, MapPin, Clock, Download, XCircle, ClipboardList, FileText } from "lucide-react";
+import { ArrowLeft, Package, CheckCircle, Truck, MapPin, Clock, Download, XCircle, ClipboardList, FileText, Wand2, HandCoins, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 
-const statusSteps = ["Pending", "Confirmed", "Shipped", "Delivered"];
+const statusSteps = ["Pending", "Confirmed", "Advance Payment Received", "Bill Amount Received", "Staged", "Shipped", "Delivered"];
 const statusIcons: Record<string, any> = {
   Pending: Clock,
   Confirmed: CheckCircle,
+  "Advance Payment Received": HandCoins,
+  "Bill Amount Received": CreditCard,
+  Staged: Package,
   Shipped: Truck,
   Delivered: MapPin,
   Cancelled: XCircle,
@@ -21,6 +24,9 @@ const statusIcons: Record<string, any> = {
 const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   Confirmed: "bg-primary/10 text-primary border-primary/20",
+  "Advance Payment Received": "bg-secondary/10 text-secondary border-secondary/20",
+  "Bill Amount Received": "bg-success/10 text-success border-success/20",
+  Staged: "bg-secondary/15 text-secondary border-secondary/30",
   Shipped: "bg-success/10 text-success border-success/20",
   Delivered: "bg-success/15 text-success border-success/30",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
@@ -62,23 +68,19 @@ const generateOrderPDF = (o: any) => {
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
     info.push(["Total Quantity", `${o.quantity} meters`]);
   } else {
-    info.push(["Color", (o.selected_color || "Standard").split(",").map((c: string) => c.split(":")[0].trim()).join(", ")]);
+    info.push(["Color", o.selected_color || "Standard"]);
     info.push(["Quantity Type", o.quantity_type || "Lump"]);
     info.push(["Quantity", `${o.quantity} meters`]);
   }
-  
+
   info.push(["Rate", `₹${Number(o.price_per_meter).toLocaleString("en-IN")}/meter`]);
-  info.push(["Subtotal", `₹${Number(o.subtotal || o.total).toLocaleString("en-IN")}`]);
-  if (o.total_gst > 0) {
-    if (o.state === "Madhya Pradesh") {
-      info.push(["CGST (2.5%)", `₹${Number(o.cgst).toLocaleString("en-IN")}`]);
-      info.push(["SGST (2.5%)", `₹${Number(o.sgst).toLocaleString("en-IN")}`]);
-    } else {
-      info.push(["IGST (5%)", `₹${Number(o.igst).toLocaleString("en-IN")}`]);
-    }
-    info.push(["Total GST", `₹${Number(o.total_gst).toLocaleString("en-IN")}`]);
+  info.push(["Total Amount", `₹${Number(o.total).toLocaleString("en-IN")}`]);
+
+  if (o.apc_details?.is_apc) {
+    info.push(["APC Request", "Yes"]);
+    info.push(["APC Target Color", o.apc_details.target_color]);
+    info.push(["APC Cutting Address", o.apc_details.cutting_address]);
   }
-  info.push(["Grand Total", `₹${Number(o.total).toLocaleString("en-IN")}`]);
 
   info.forEach(([l, v]) => {
     doc.setTextColor(120); doc.text(l, m, y);
@@ -93,22 +95,20 @@ const generateOrderPDF = (o: any) => {
     y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    
+
     // Header for items table
     doc.setTextColor(120);
     doc.text("Color", m, y);
-    doc.text("Type", 60, y);
-    doc.text("APC", 90, y);
-    doc.text("Quantity", 130, y);
+    doc.text("Type", 70, y);
+    doc.text("Quantity", 110, y);
     y += 6;
     doc.line(m, y - 4, 150, y - 4);
 
     o.items.forEach((item: any) => {
       doc.setTextColor(0);
-      doc.text((item.color || "Standard").split(":")[0].trim(), m, y);
-      doc.text(item.quantityType || "Lump", 60, y);
-      doc.text(item.apcCode || "-", 90, y);
-      doc.text(`${item.quantity}m`, 130, y);
+      doc.text(item.color || "Standard", m, y);
+      doc.text(item.quantityType || "Lump", 70, y);
+      doc.text(`${item.quantity}m`, 110, y);
       y += 6;
     });
     doc.setFontSize(10);
@@ -123,7 +123,7 @@ const generateOrderPDF = (o: any) => {
 
   const del: [string, string][] = [
     ["Name", o.buyer_name],
-    ["Company", o.company_name],
+    ["Billing Name", o.billing_name],
     ["Phone", o.phone],
     ["Email", o.email],
     ["Address", o.delivery_address],
@@ -159,8 +159,7 @@ const generateOrderPDF = (o: any) => {
 
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text("* Transportation charges would be added to the final billing.", m, 275);
-  doc.text("Thank you for your order — Hera Textiles", m, 280);
+  doc.text("Thank you for your order — Mill Connect", m, 280);
   doc.save(`Hera-Order-${o.id.slice(0, 8)}.pdf`);
 };
 
@@ -269,8 +268,8 @@ const OrderDetail = () => {
                 ) : (
                   <div className="relative flex items-center justify-between">
                     <div className="absolute left-0 right-0 top-6 h-1 -translate-y-1/2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-1000" 
+                      <div
+                        className="h-full bg-primary transition-all duration-1000"
                         style={{ width: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%` }}
                       />
                     </div>
@@ -280,13 +279,12 @@ const OrderDetail = () => {
                       const isCurrent = i === currentStepIndex;
                       return (
                         <div key={step} className="flex flex-col items-center relative z-10">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
-                            isCurrent
+                          <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${isCurrent
                               ? "bg-primary text-primary-foreground ring-8 ring-primary/10 scale-110"
                               : isCompleted
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background border-2 border-muted text-muted-foreground"
-                          }`}>
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-background border-2 border-muted text-muted-foreground"
+                            }`}>
                             <Icon className="h-5 w-5" />
                           </div>
                           <span className={`mt-3 text-xs font-bold uppercase tracking-tighter ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
@@ -299,6 +297,36 @@ const OrderDetail = () => {
                 )}
               </div>
             </div>
+
+            {/* Payment Instructions */}
+            {order.status === "Confirmed" && (
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                    <CreditCard className="h-6 w-6" />
+                  </div>
+                  <h2 className="font-display text-2xl font-bold">Payment Action Required</h2>
+                </div>
+                <div className="space-y-6">
+                  <div className="rounded-2xl bg-background border p-6">
+                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground/80">
+                      {order.payment_message || "Your order has been confirmed! Please proceed with the advance payment of ₹5000 to initiate the dispatching process. You can find the bank details above or use the payment link below."}
+                    </p>
+                  </div>
+                  {order.payment_link && (
+                    <Button 
+                      className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-premium"
+                      onClick={() => window.open(order.payment_link, "_blank")}
+                    >
+                      <HandCoins className="mr-2 h-5 w-5" /> Pay Advance ₹5000
+                    </Button>
+                  )}
+                  <p className="text-center text-xs text-muted-foreground italic">
+                    Dispatching starts immediately after advance payment verification.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Shipment Tracking */}
             {(order.courier_name || order.tracking_number) && (
@@ -371,14 +399,11 @@ const OrderDetail = () => {
                       {order.items.map((item: any, idx: number) => (
                         <div key={idx} className="group rounded-xl bg-muted/30 p-4 transition-all hover:bg-muted/50">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-muted-foreground uppercase">{item.color?.split(":")[0].trim()}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase">{item.color}</span>
                             <Badge variant="outline" className="text-[10px] font-bold px-2 py-0">{item.quantityType}</Badge>
                           </div>
                           <div className="flex justify-between items-end">
-                            <div className="flex flex-col">
-                              <span className="text-lg font-bold">{item.quantity}m</span>
-                              {item.apcCode && <span className="text-[10px] text-primary font-bold">APC: {item.apcCode}</span>}
-                            </div>
+                            <span className="text-lg font-bold">{item.quantity} {order.fabrics?.unit || 'meters'}</span>
                             <span className="text-xs text-muted-foreground">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
                           </div>
                         </div>
@@ -386,9 +411,9 @@ const OrderDetail = () => {
                     </div>
                   ) : (
                     <div className="space-y-4 pb-6 border-b">
-                       <div className="flex justify-between">
+                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Color</span>
-                        <span className="font-bold">{(order.selected_color || "Standard").split(",").map((c: string) => c.split(":")[0].trim()).join(", ")}</span>
+                        <span className="font-bold">{order.selected_color || "Standard"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Quantity Type</span>
@@ -400,47 +425,57 @@ const OrderDetail = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="pt-6">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium">₹{Number(order.subtotal || order.total).toLocaleString("en-IN")}</span>
+                      <span className="text-muted-foreground">Subtotal Rate</span>
+                      <span className="font-medium">₹{Number(order.price_per_meter).toLocaleString("en-IN")}/m</span>
                     </div>
-                    {order.total_gst > 0 && (
-                      <div className="mt-4 space-y-2 border-t pt-2 text-xs">
-                        {order.state === "Madhya Pradesh" ? (
-                          <>
-                            <div className="flex justify-between text-muted-foreground">
-                              <span>CGST (2.5%)</span>
-                              <span>₹{Number(order.cgst).toLocaleString("en-IN")}</span>
-                            </div>
-                            <div className="flex justify-between text-muted-foreground">
-                              <span>SGST (2.5%)</span>
-                              <span>₹{Number(order.sgst).toLocaleString("en-IN")}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>IGST (5%)</span>
-                            <span>₹{Number(order.igst).toLocaleString("en-IN")}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between font-bold text-primary border-t pt-1">
-                          <span>Total GST</span>
-                          <span>₹{Number(order.total_gst).toLocaleString("en-IN")}</span>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex justify-between mt-4 rounded-2xl bg-primary/5 p-5 border border-primary/10">
-                      <span className="font-bold text-lg">Grand Total</span>
+                      <span className="font-bold text-lg">Total</span>
                       <span className="text-2xl font-black text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
                     </div>
-                    <p className="mt-2 text-[10px] font-bold text-primary italic text-center">
-                      * Transportation charges would be added to the final billing.
-                    </p>
                   </div>
                 </div>
               </div>
+
+              {order.apc_details && order.apc_details.is_apc && (
+                <div className="rounded-3xl border border-secondary/20 bg-secondary/5 p-8 shadow-sm space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-secondary/10 p-2 text-secondary">
+                      <Wand2 className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-display text-2xl font-bold text-secondary">APC (As Per Cutting)</h3>
+                  </div>
+                  
+                  <div className="grid gap-8 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Color</p>
+                      <div className="flex items-center gap-3 rounded-2xl bg-background border p-4">
+                        <div className="h-5 w-5 rounded-full border shadow-sm bg-secondary/20" />
+                        <p className="font-bold text-lg">{order.apc_details.target_color}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Cutting Address</p>
+                      <div className="rounded-2xl bg-background border p-4">
+                        <p className="font-semibold text-sm leading-relaxed">{order.apc_details.cutting_address}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">APC Quantity</p>
+                      <div className="rounded-2xl bg-background border p-4">
+                        <p className="font-bold text-lg text-primary">{order.apc_details.quantity || order.quantity} {order.fabrics?.unit || "m"}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-secondary/10 rounded-xl p-3 flex items-center gap-2 text-[10px] font-bold text-secondary uppercase tracking-tighter">
+                    <CheckCircle className="h-3 w-3" /> Custom Cutting Instructions requested for this order
+                  </div>
+                </div>
+              )}
 
               {/* Delivery Details */}
               <div className="rounded-3xl border bg-card p-8 shadow-sm">
@@ -451,7 +486,7 @@ const OrderDetail = () => {
                 <div className="space-y-4 text-sm">
                   <div>
                     <p className="font-bold text-lg">{order.buyer_name}</p>
-                    <p className="font-medium text-muted-foreground">{order.company_name}</p>
+                    <p className="font-medium text-muted-foreground">{order.billing_name}</p>
                   </div>
                   <div className="rounded-2xl bg-muted/30 p-4 font-medium leading-relaxed">
                     {order.delivery_address}
