@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,10 +18,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFieldArray } from "react-hook-form";
 
 const itemSchema = z.object({
-  color: z.string().min(1, "Color is required"),
+  colors: z.array(z.string()).min(1, "At least one color required"),
   quantity: z.coerce.number().min(0.1, "Quantity must be at least 0.1"),
   quantityType: z.enum(["Lump", "Cut Pack"]),
-  apcCode: z.string().optional(),
 });
 
 const quoteSchema = z.object({
@@ -31,7 +30,7 @@ const quoteSchema = z.object({
 
 type QuoteFormData = z.infer<typeof quoteSchema>;
 
-const ColorSelector = ({ colors, selectedColor, onSelect }: { colors: string; selectedColor: string; onSelect: (color: string) => void }) => {
+const ColorSelector = ({ colors, selectedColors, onToggle }: { colors: string; selectedColors: string[]; onToggle: (color: string) => void }) => {
   const [search, setSearch] = useState("");
   
   const allColors = colors.split(",").map(c => {
@@ -60,12 +59,12 @@ const ColorSelector = ({ colors, selectedColor, onSelect }: { colors: string; se
       <div className="max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
         <div className="flex flex-wrap gap-2">
           {filteredColors.map((c, idx) => {
-            const isSelected = selectedColor === c.name;
+            const isSelected = selectedColors.includes(c.name);
             return (
               <button
                 key={idx}
                 type="button"
-                onClick={() => onSelect(c.name)}
+                onClick={() => onToggle(c.name)}
                 className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all outline-none ${
                   isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:border-primary/50"
                 }`}
@@ -91,16 +90,10 @@ const QuoteRequest = () => {
   const { data: fabric, isLoading } = useFabric(fabricId);
   const [submitted, setSubmitted] = useState(false);
 
-  const queryParams = new URLSearchParams(window.location.search);
-  const colorsParam = queryParams.get("colors") || queryParams.get("color") || "";
-  const initialColors = useMemo(() => colorsParam ? colorsParam.split(",").map(c => c.trim()).filter(Boolean) : [], [colorsParam]);
-
-  const { register, handleSubmit, formState: { errors }, watch, setValue, control, reset } = useForm<QuoteFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
     defaultValues: { 
-      items: initialColors.length > 0 
-        ? initialColors.map(c => ({ color: c, quantity: fabric?.min_order || 100, quantityType: "Lump" }))
-        : [{ color: "", quantity: 100, quantityType: "Lump" }] 
+      items: [{ colors: [], quantity: "" as any, quantityType: "" as any }],
     },
   });
 
@@ -108,8 +101,6 @@ const QuoteRequest = () => {
     control,
     name: "items",
   });
-
-  const watchedItems = watch("items");
 
   if (!user) {
     navigate(`/auth?redirect=/quote/${fabricId}`);
@@ -128,34 +119,25 @@ const QuoteRequest = () => {
     );
   }
 
-  // Effect to handle initial colors when fabric loads
-  useEffect(() => {
-    if (fabric) {
-      const isDefaultState = fields.length === 1 && !fields[0].color;
-      if (isDefaultState || initialColors.length > 0) {
-        const itemsToSet = initialColors.length > 0
-          ? initialColors.map(c => ({ color: c, quantity: fabric.min_order, quantityType: "Lump" as const }))
-          : [{ color: fabric.colors?.split(",")[0]?.split(":")[0]?.trim() || "", quantity: fabric.min_order, quantityType: "Lump" as const }];
-        
-        reset((prev) => ({ 
-          ...prev, 
-          items: itemsToSet
-        }));
-      }
-    }
-  }, [fabric, reset, initialColors]);
-
   const onSubmit = async (data: QuoteFormData) => {
     const totalQuantity = data.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+    const allSelectedColors = Array.from(new Set(data.items.flatMap(i => i.colors))).join(", ");
+    
+    // For the individual items JSON, we preserve the arrays
+    const itemsJson = data.items.map(item => ({
+      ...item,
+      color: item.colors.join(", ") // Supporting legacy single color string if needed, while keeping array in colors
+    }));
+
     const { error } = await supabase.from("quote_requests").insert({
       user_id: user.id,
       fabric_id: fabric.id,
       fabric_name: fabric.name,
       quantity: totalQuantity,
       message: data.message || null,
-      selected_color: data.items.map(i => i.color).join(", "),
+      selected_color: allSelectedColors,
       quantity_type: data.items.length > 1 ? "Mixed" : data.items[0].quantityType,
-      items: data.items, // JSONB field
+      items: itemsJson, 
     });
     if (error) { toast.error("Failed to submit quote request"); return; }
     setSubmitted(true);
@@ -188,21 +170,28 @@ const QuoteRequest = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
-              <h2 className="text-xl font-semibold text-foreground">Requested Items</h2>
+              <h2 className="font-display text-xl font-semibold text-foreground">Requested Items</h2>
               <Button 
                 type="button" 
                 variant="outline" 
                 size="sm" 
-                onClick={() => append({ color: "", quantity: fabric.min_order, quantityType: "Lump" })}
+                onClick={() => append({ colors: [], quantity: "", quantityType: "" } as any)}
               >
-                <Plus className="mr-1 h-4 w-4" /> Add Color
+                <Plus className="mr-1 h-4 w-4" /> Add Item Config
               </Button>
             </div>
 
             {fields.map((field, index) => {
-              const itemColor = watch(`items.${index}.color`);
+              const itemColors = watch(`items.${index}.colors`) || [];
               const itemQuantityType = watch(`items.${index}.quantityType`);
               
+              const handleColorToggle = (color: string) => {
+                const newColors = itemColors.includes(color)
+                  ? itemColors.filter(c => c !== color)
+                  : [...itemColors, color];
+                setValue(`items.${index}.colors`, newColors, { shouldValidate: true, shouldDirty: true });
+              };
+
               return (
                 <div key={field.id} className="relative rounded-xl border bg-card p-6 shadow-sm">
                   {fields.length > 1 && (
@@ -219,22 +208,21 @@ const QuoteRequest = () => {
                   
                   <div className="space-y-6">
                     <div>
-                      <Label className="mb-2 block">Select Color *</Label>
+                      <Label className="mb-2 block">Select Colors * <span className="text-xs text-muted-foreground font-normal">(choose one or more)</span></Label>
                       <ColorSelector 
                         colors={fabric.colors || ""} 
-                        selectedColor={itemColor} 
-                        onSelect={(color) => setValue(`items.${index}.color`, color)} 
+                        selectedColors={itemColors} 
+                        onToggle={handleColorToggle} 
                       />
-                      {errors.items?.[index]?.color && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.color?.message}</p>}
+                      {errors.items?.[index]?.colors && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.colors?.message}</p>}
                     </div>
 
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
                         <Label>Quantity Type *</Label>
                         <RadioGroup
-                          defaultValue="Lump"
                           value={itemQuantityType}
-                          onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v)}
+                          onValueChange={(v: "Lump" | "Cut Pack") => setValue(`items.${index}.quantityType`, v, { shouldValidate: true, shouldDirty: true })}
                           className="mt-3 flex gap-4"
                         >
                           <div className="flex items-center space-x-2">
@@ -249,10 +237,11 @@ const QuoteRequest = () => {
                       </div>
 
                       <div>
-                        <Label htmlFor={`q-quantity-${index}`}>Quantity ({fabric.unit}) *</Label>
+                        <Label htmlFor={`q-quantity-${index}`}>Total Quantity ({fabric.unit}) *</Label>
                         <Input
                           id={`q-quantity-${index}`}
                           type="number"
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
                           step={itemQuantityType === "Cut Pack" ? "1.20" : "1"}
                           {...register(`items.${index}.quantity` as const, {
                             validate: (val) => {
@@ -269,21 +258,6 @@ const QuoteRequest = () => {
                         {errors.items?.[index]?.quantity && <p className="mt-1 text-sm text-destructive">{errors.items[index]?.quantity?.message}</p>}
                       </div>
                     </div>
-
-                    {!!fabric?.apc_enabled && (
-                      <div className="mt-6 border-t pt-4">
-                        <Label htmlFor={`q-apc-${index}`}>APC Code (Optional)</Label>
-                        <Input
-                          id={`q-apc-${index}`}
-                          {...register(`items.${index}.apcCode` as const)}
-                          placeholder="Enter APC code for manual cutting"
-                          className="mt-1.5"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1 italic">
-                          * Share this code for manual fetching and cutting
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
