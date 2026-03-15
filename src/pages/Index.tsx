@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFeaturedFabrics } from "@/hooks/useFabrics";
 import SEO from "@/components/SEO";
-import { ColorSwatchList } from "@/components/ColorSwatch";
+import { ColorSwatchList } from "@/components/ColorSwatch.tsx";
 
 const Index = () => {
   const { data: featured } = useFeaturedFabrics();
